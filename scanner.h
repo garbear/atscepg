@@ -13,7 +13,7 @@ class cATSCScanner : public cOsdMenu, public cThread, public cFilter
 {
 public:
   cATSCScanner(void);
- ~cATSCScanner(void);
+  virtual ~cATSCScanner();
  
   virtual eOSState ProcessKey(eKeys Key);
  

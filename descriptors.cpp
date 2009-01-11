@@ -43,8 +43,9 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
         // 0xB0 to 0xFF: Used in other systems
         
         default:
-          dec = "-E-";
-      };
+          dprint(L_ERR, "Got unknown compression type 0x%02X", compression_type);
+          dec = "?";
+      }
       
       str += dec; // Add decompressed segment
        
@@ -109,53 +110,65 @@ void Descriptor::Print(void)
 Descriptor* Descriptor::CreateDescriptor(const u8* data)
 {
   //dprint(L_DBG, "Got %s", DescriptorText(data[0]));
+
+  Descriptor* desc = NULL;
   
-  if      (data[0] == 0x80) // Stuffing Descriptor
-    return NULL;
+  switch( data[0] )
+  {
+    case 0x80: // Stuffing Descriptor
+      break;
     
-  else if (data[0] == 0x81) // AC-3 audio Descriptor
-    return new AC3AudioDescriptor(data); 
+    case 0x81: // AC-3 audio Descriptor
+      desc = new AC3AudioDescriptor(data); 
+      break;
               
-  else if (data[0] == 0x86) // Caption Service Descriptor
-    return new CaptionServiceDescriptor(data); 
+    case 0x86: // Caption Service Descriptor
+      desc = new CaptionServiceDescriptor(data); 
+      break;
       
-  else if (data[0] == 0x87) // Content Advisory Descriptor
-    return new ContentAdvisoryDescriptor(data); 
+    case 0x87: // Content Advisory Descriptor
+      desc = new ContentAdvisoryDescriptor(data); 
+      break;
     
-  else if (data[0] == 0xA0) // Extended Channel Name Descriptor
-    return new ExtendedChannelNameDescriptor(data);
+    case 0xA0: // Extended Channel Name Descriptor
+      desc = new ExtendedChannelNameDescriptor(data);
+      break;
     
-  else if (data[0] == 0xA1) // Service Location Descriptor
-    return new ServiceLocationDescriptor(data);
+    case 0xA1: // Service Location Descriptor
+      desc = new ServiceLocationDescriptor(data);
+      break;
     
-  else if (data[0] == 0xA2) // Time-Shifted Service Descriptor
-    return NULL;
+    case 0xA2: // Time-Shifted Service Descriptor
+      break;
     
-  else if (data[0] == 0xA3) // Component Name Descriptor
-    return NULL;
+    case 0xA3: // Component Name Descriptor
+      break;
     
-  else if (data[0] == 0xA8) // DCC Departing Request Descriptor
-    return NULL;
+    case 0xA8: // DCC Departing Request Descriptor
+      break;
     
-  else if (data[0] == 0xA9) // DCC Arriving Request Descriptor 
-    return NULL;
+    case 0xA9: // DCC Arriving Request Descriptor 
+      break;
                
-  else if (data[0] == 0xAA) // Redistribution Control Descriptor
-    return NULL;
+    case 0xAA: // Redistribution Control Descriptor
+      break;
               
-  else if (data[0] == 0xAD) // ATSC Private Information Descriptor
-    return NULL;
+    case 0xAD: // ATSC Private Information Descriptor
+      break;
           
-  else if (data[0] == 0xB6) // Content Identifier Descriptor
-    return NULL;
+    case 0xB6: // Content Identifier Descriptor
+      break;
     
-  else if (data[0] == 0xAB) // Genre Descriptor
-    return new GenreDescriptor(data);
+    case 0xAB: // Genre Descriptor
+      return new GenreDescriptor(data);
+      break;
   
-  else {
-    dprint(L_ERR, "Unknown descriptor type: 0x%02X", data[0]);
-    return NULL;
+    default:
+      dprint(L_ERR, "Unknown descriptor type: 0x%02X", data[0]);
+      break;  
   }
+  
+  return desc;
 }
 
 //////////////////////////////////////////////////////////////////////////////

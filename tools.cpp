@@ -8,7 +8,7 @@
 
 static uint8_t logType = 0;
 
-void setLogType(uint8_t type) { logType = type; }
+void SetLogType(uint8_t type) { logType = type; }
 
 void dprint(uint8_t type, const char* msg, ...)
 {

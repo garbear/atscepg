@@ -13,7 +13,7 @@
 
 bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 {
-	if (!stt) return false; 
+	// if (!stt) return false; 
 
 	cChannel* c = GetChannel( eit.SourceID() , eit.TableID() );
 
@@ -34,13 +34,13 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id/*, e->start_time*/);
 	    if (!pEvent)
 	    {
-	      // DEBUG_MSG("Added Event with ID %d", e->event_id );
+	      dprint(L_DBG, "Added Event with ID %d", e->event_id );
 	      s->AddEvent( CreateVDREvent(*e) );
 	      modified = true;
 	    } 
 	    else
 	    {
-	      // DEBUG_MSG("Updated Event with ID %d", e->event_id );
+	      dprint(L_DBG, "Updated Event with ID %d", e->event_id );
 	      pEvent->SetSeen();
 	      //TODO: Check version info
 	    }
