@@ -16,14 +16,18 @@ class PSIPTable
 public:
 	PSIPTable(const u8* data) { update(data); }
 	PSIPTable(void) { }
-  virtual ~PSIPTable() { }
+  virtual ~PSIPTable();
 	virtual void print(void) const;
 	virtual void update(const u8* data);
 	u8 getVersion(void) { return version_number; }
-	
+	u8 getTableID(void) { return table_id; }
+	u32 getNumDescriptors(void) { return descriptors.size(); }
+	Descriptor* getDescriptor(u32 i);
 	static u8 extractVersion(const u8* data) { return (data[5] >> 1) & 0x1F; }
 	 
 protected:
+  void addDescriptors(const u8* data, u16 length);
+  
   u8  table_id;
   //  section_syntax_indicator ‘1’
   //  private_indicator        ‘1’
@@ -39,7 +43,7 @@ protected:
   // PSIP_table_data()
   u32 CRC_32;
 
-	//TODO: Descriptors ?
+	std::vector<Descriptor*> descriptors;
 };
 
 
@@ -51,7 +55,7 @@ class MGT : public PSIPTable
 {
 public:
 	MGT(const u8* data);
-  virtual ~MGT() { }	
+  //virtual ~MGT() { }	
   void print(void) const;
   u32 getNumTables(void) const { return tables.size(); }
   Table getTable(int i) const  { return tables[i]; }
@@ -73,7 +77,7 @@ class STT : public PSIPTable
 {
 public:
 	STT(const u8* data);
-	virtual ~STT() { }
+	//virtual ~STT() { }
 	time_t getTime(void) const;
 	void print(void) const;
 	void update(const u8* data);
@@ -94,7 +98,7 @@ class EIT : public PSIPTable
 {
 public:
 	EIT(const u8* data);
-  virtual ~EIT() { }	
+  //virtual ~EIT() { }	
   //void print(void);
   u32 getNumEvents(void) const { return events.size(); }
   Event getEvent(int i)  const { return events[i]; }
@@ -113,7 +117,7 @@ class VCT : public PSIPTable
 {
 public:
 	VCT(const u8* data);
-  virtual ~VCT() { }	
+  //virtual ~VCT() { }	
   u32 getNumChannels(void)  const { return channels.size(); }
   Channel getChannel(int i) const { return channels[i]; }
   u16 getTID(void) const { return transport_stream_id; }
@@ -131,7 +135,7 @@ class RTT : public PSIPTable
 {
 public:
 	RTT(const u8* data);
-  virtual ~RTT() { }	
+  //virtual ~RTT() { }	
 
 private:
 	
@@ -145,7 +149,7 @@ class ETT : public PSIPTable, public MultipleStringStructure
 {
 public:
 	ETT(const u8* data);
-  virtual ~ETT() { }	
+  //virtual ~ETT() { }	
 	u16 getSourceID(void) const {return source_id; }
 	u16 getEventID(void)  const {return event_id; }
 	

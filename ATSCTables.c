@@ -10,6 +10,37 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
+PSIPTable::~PSIPTable()
+{
+	for (u32 i=0; i<descriptors.size(); i++)
+	  delete descriptors[i];
+}
+
+//----------------------------------------------------------------------------
+
+Descriptor* PSIPTable::getDescriptor(u32 i)
+{
+	if (i < descriptors.size()) return descriptors[i];
+	
+	return NULL;
+}
+
+//----------------------------------------------------------------------------
+
+void PSIPTable::addDescriptors(const u8* data, u16 length)
+{ 
+  const u8* dc = data;
+
+	while ( dc < data+length )
+	{ 
+	  Descriptor* d = Descriptor::getDescriptor(dc);
+	  if (d) descriptors.push_back( d );
+		dc += dc[1] + 2;
+  }	
+}
+
+//----------------------------------------------------------------------------
+	
 void PSIPTable::update(const u8* data)
 {
 	table_id               = data[0];
@@ -21,13 +52,17 @@ void PSIPTable::update(const u8* data)
 	last_section_number    = data[7];
 	protocol_version       = data[8];
 	
-	u16 length = section_length +3;
-	CRC_32 = get_u32(data+ length-4);
-
-  /*
-  if ( SI::CRC32::isValid((const char*)data, length-4, CRC_32) )
-	{ DEBUG_MSG("CRC OK"); } else { DEBUG_MSG("CRC FAILED"); }
-	*/ 
+	CRC_32 = get_u32(data+ section_length-1);
+#if 0
+	for (u32 i=0; i<section_length; i++) {
+    const char* start = (const char*) data + i;
+    u16 length = section_length-1- i;
+ 
+  
+  if ( SI::CRC32::isValid(start, length, CRC_32) )
+	{ DEBUG_MSG("~~~ CRC OK %d ~~~~~~~~~~~~~", i); } else { /*DEBUG_MSG("CRC FAILED");*/ }
+	}
+#endif	
 }
 
 //----------------------------------------------------------------------------
@@ -129,9 +164,9 @@ void STT::update(const u8* data)
 
 inline void STT::parse(const u8* data)
 {
-		// Number of seconds since 00:00:00 UTC Jan 6, 1980
+  // Number of seconds since 00:00:00 UTC Jan 6, 1980
 	system_time      = (data[9] << 24) | (data[10] << 16) | (data[11] << 8) | data[12];
-	GPS_UTC_offset    = data[13]; // Subtract from GPS time for UTC
+	GPS_UTC_offset   =  data[13]; // Subtract from GPS time for UTC
 	daylight_savings = (data[14] << 8) | data[15];
 	
 	//TODO: Descriptors ?
@@ -139,9 +174,10 @@ inline void STT::parse(const u8* data)
 
 //----------------------------------------------------------------------------
 
+// Does not work - but no longer used anyway
 time_t STT::UTCtoLocal(time_t utcTime) const
 {
-	//TODO: Is there a better way t do this?.
+	//TODO: Is there a better way to do this?.
 	time_t utc = utcTime - GPS_UTC_offset 
 	           + secs_Between_1Jan1970_6Jan1980;
 
@@ -212,40 +248,11 @@ EIT::EIT(const u8* data) : PSIPTable(data)
 		// reserved     4   ‘1111’
 		u16 descriptors_length = ((d[10 + title_length] & 0x0F) << 8) | d[11 + title_length];
 	
-	 	const u8* dc = &(d[12 + title_length]);
+		// Deal with and remove these descriptors right here...
+		//addDescriptors(d+12+title_length, descriptors_length);
+	 	
 	 	d = &(d[12 + title_length + descriptors_length]);
-	
-		while ( dc < d )
-		{ //TODO: Do something with descriptors...
-			//DEBUG_MSG("%s", descriptor(dc[0]) );
-			/*
-			if      (dc[0] == 0x80) // Stuffing Descriptor
-      { }
-			else if (dc[0] == 0x81) // AC-3 audio Descriptor
-		  { //AC3AudioDescriptor aad(dc); aad.print();
-		  } 		    	
-		  else if (dc[0] == 0x86) // Caption Service Descriptor
-		  { //CaptionServiceDescriptor csp(dc); 
-		  }    	
-		  else if (dc[0] == 0x87) // Content Advisory Descriptor
-		  { //ContentAdvisoryDescriptor cad(dc); 
-		  }			    		    
-  		else if (dc[0] == 0xAA) // Redistribution Control Descriptor
-  		{ }  		  	
-		  else if (dc[0] == 0xAD) // ATSC Private Information Descriptor
-		   { } 		    	
-		  else if (dc[0] == 0xB6) // Content Identifier Descriptor
-		  { }  	
-		  else if (dc[0] == 0xAB) // Genre Descriptor
-		  { }  
-		  else {
-		    DEBUG_MSG("Unknown EIT Descriptor: %02X", dc[0]);
-			}
-		  */
-		  dc = &( dc[dc[1] + 2] );
-    }
-    
-  
+
     events.push_back( event );
 	} 
 	
@@ -292,19 +299,37 @@ VCT::VCT(const u8* data) : PSIPTable(data)
     u8  service_type         = (d[27] & 0x3F);
     */
     u16 source_id            = (d[28] << 8) | d[29];
-     
+    
+    Channel ch(transport_stream_id, source_id, short_name); 
 		
 		u16 descriptors_length   = ((d[30] & 0x03) << 8) | d[31];
-	 /* 
-    for (i=0; i<N; i++) {
-  	  descriptor()
+    
+    addDescriptors(d+32, descriptors_length);
+    
+    //TODO: More in depth descriptor handling
+    for (u32 i=0; i<descriptors.size(); i++)
+    {
+    	Descriptor* d = descriptors[i];
+    	if (d->getTag() == 0xA1) // Service Location Descriptor
+    	{
+    		ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(d);
+    		ch.PCR_PID = sld->getPCR_PID();
+    		
+    		for (u32 j=0; j<sld->getNumStreams(); j++)
+    		{
+    		  Stream s = sld->getStream(j);
+    		  if (s.stream_type == 0x02) ch.vPID = s.elementary_PID;
+    		  else if (s.stream_type == 0x81) ch.aPID = s.elementary_PID;
+    		}
+    	}
     }
-    */
     
-    Channel ch(transport_stream_id, source_id, short_name);
+	 	d = &(d[32 + descriptors_length]);
+
+      
+    
     channels.push_back( ch ); 
-    
-		d = &(d[32 + descriptors_length]);
+	
 	}
 	 
 	/*
@@ -322,7 +347,7 @@ VCT::VCT(const u8* data) : PSIPTable(data)
 
 RTT::RTT(const u8* data) : PSIPTable(data)
 {
-u8  rating_region_name_length =  data[9]; 
+  u8  rating_region_name_length =  data[9]; 
   
 	MultipleStringStructure rating_region_name_text( &(data[10]) );
 	//rating_region_name_text.print(); 

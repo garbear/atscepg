@@ -25,9 +25,9 @@ public:
 	
 private:
 	u16 currentTID;
-  cChannel* getChannel(u16 s_id) const;
+  cChannel* getChannel(u16 s_id, u8 table_id) const;
 	cEvent* createVDREvent(Event& event);
-
+  void displayChannelInfo(Channel& ch, u8 table_id) const;
 	time_t GPStoSystem(time_t gps);
 	
 	STT* stt;

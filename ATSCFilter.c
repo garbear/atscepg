@@ -125,6 +125,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char *Data, int Lengt
   	// Do we have a newer version?
   	if ( PSIPTable::extractVersion(Data) > mgt->getVersion() )
   	{
+  	  DEBUG_MSG("New MGT Version: updating event info.");
   		mgt->update(Data);
   		updateTables = true;
   	}
@@ -139,7 +140,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char *Data, int Lengt
   		  if (t.tid == 0xCC) 
   		  { 
   		  	if (t.table_type == 0x0004) // Channel ETT
-  		  	  ; //TODO: Use Channel ETT for long channel name update
+  		  	  ; //TODO: Use Channel ETT.
   		  	else // Event ETT 
   		      ettPids.push_back(t.pid);
   		  }  
@@ -191,7 +192,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char *Data, int Lengt
 	//~~~ STT: System Time Table ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	else if (Tid ==  0xCD)		
 	{
-	  if (now - lastScanSTT <= MGT_SCAN_DELAY) return;
+	  if (now - lastScanSTT <= STT_SCAN_DELAY) return;
   	DEBUG_MSG("Received STT.");
   	vdrInterface.updateSTT(Data);	
   	
@@ -271,7 +272,7 @@ bool cATSCFilter::delE_T(u16 pid, u8 tid, u16 sid, u16 eid)
 	
 	std::vector<PTS>::iterator itr = pts.begin();
 
-  for (; itr <= pts.end(); itr++)
+  for (; itr != pts.end(); itr++)
   {
 	  if (*itr == nPts)
 	  {

@@ -85,6 +85,59 @@ std::string MultipleStringStructure::getString(u32 i) const
 
 //////////////////////////////////////////////////////////////////////////////
 
+
+Descriptor* Descriptor::getDescriptor(const u8* data)
+{
+	if      (data[0] == 0x80) // Stuffing Descriptor
+    return NULL;
+    
+	else if (data[0] == 0x81) // AC-3 audio Descriptor
+	  return new AC3AudioDescriptor(data); 
+	  		    	
+	else if (data[0] == 0x86) // Caption Service Descriptor
+	  return new CaptionServiceDescriptor(data); 
+	  	
+	else if (data[0] == 0x87) // Content Advisory Descriptor
+	  return new ContentAdvisoryDescriptor(data); 
+		
+	else if (data[0] == 0xA0) // Extended Channel Name Descriptor
+	  return new ExtendedChannelNameDescriptor(data);
+	  
+	else if (data[0] == 0xA1) // Service Location Descriptor
+	  return new ServiceLocationDescriptor(data);
+	  
+	else if (data[0] == 0xA2) // Time-Shifted Service Descriptor
+	  return NULL;
+	  
+	else if (data[0] == 0xA3) // Component Name Descriptor
+	  return NULL;
+	  
+	else if (data[0] == 0xA8) // DCC Departing Request Descriptor
+	  return NULL;
+	  
+	else if (data[0] == 0xA9) // DCC Arriving Request Descriptor 
+	  return NULL;
+	     		    
+  else if (data[0] == 0xAA) // Redistribution Control Descriptor
+    return NULL;
+      		  	
+	else if (data[0] == 0xAD) // ATSC Private Information Descriptor
+    return NULL;
+        	
+	else if (data[0] == 0xB6) // Content Identifier Descriptor
+    return NULL;
+    
+	else if (data[0] == 0xAB) // Genre Descriptor
+    return new GenreDescriptor(data);
+	
+	else {
+		    DEBUG_MSG("Unknown Descriptor: %02X", data[0]);
+		    return NULL;
+  }
+}
+
+//////////////////////////////////////////////////////////////////////////////
+
 // TESTED - ok
 // TODO: Not all fields are always specified, find appropriate default values
 AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
@@ -229,7 +282,7 @@ ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data): De
 
 //////////////////////////////////////////////////////////////////////////////
 
-// UNTESTED
+// TESTED - partial test: ok
 ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descriptor(data)
 {
 	PCR_PID = ((data[2] & 0x1F) << 8) | data[3];
@@ -239,10 +292,12 @@ ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descripto
 	const u8* d = &(data[5]);
 	for (u8 i=0; i< number_elements; i++) 
 	{
-		u8  stream_type = d[0];
-		u16 elementary_PID = ((d[1] & 0x1F) << 8) | d[2];
-		u32 ISO_639_language_code = (d[3] << 16) | (d[4] << 8) | d[5];
+	  Stream s(d[0], ((d[1] & 0x1F) << 8) | d[2], (d[3] << 16) | (d[4] << 8) | d[5]);
+		//u8  stream_type = d[0];
+		//u16 elementary_PID = ((d[1] & 0x1F) << 8) | d[2];
+		//u32 ISO_639_language_code = (d[3] << 16) | (d[4] << 8) | d[5];
 		
+		streams.push_back(s);
 		d = &(d[6]);
 	}
 }

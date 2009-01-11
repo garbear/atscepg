@@ -56,6 +56,10 @@ struct Channel
   u16 source_id;
   std::string short_name;
 
+	u16 aPID;
+	u16 vPID;
+	u16 PCR_PID;
+	
   Channel(u16 ts_id, u16 s_id, std::string s="") { transport_stream_id = ts_id; source_id = s_id; short_name=s;}
   
 /*   // Make this class STL "safe"
@@ -115,6 +119,18 @@ struct PTS
   }
 };
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+struct Stream
+{
+	Stream(u8 s, u16 p, u32 l) { stream_type=s; elementary_PID=p; ISO_639_language_code=l; }
+	
+	u8  stream_type;
+  u16 elementary_PID;
+	u32 ISO_639_language_code;
+};
 
 //////////////////////////////////////////////////////////////////////////////
 

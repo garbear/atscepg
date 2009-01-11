@@ -46,7 +46,7 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 ### The object files (add further files here):
 
 OBJS = $(PLUGIN).o ATSCFilter.o ATSCTables.o ATSCTypes.o ATSCHuffman.o \
-                   ATSCDescriptors.o vdrInterface.o
+                   ATSCDescriptors.o vdrInterface.o ATSCSetupMenu.o
 
 ### Implicit rules:
 

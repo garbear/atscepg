@@ -10,9 +10,10 @@
 #include <vdr/status.h>
 
 #include "ATSCFilter.h"
+#include "config.h"
+#include "ATSCSetupMenu.h"
 
-
-static const char *VERSION        = "0.0.1";
+static const char *VERSION        = "0.0.2";
 static const char *DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char *MAINMENUENTRY  =  NULL; 
 
@@ -24,6 +25,7 @@ class cPluginAtscepg : public cPlugin, cStatus {
 private:
   // Add any member variables or functions you may need here.
   cATSCFilter* myATSCFilter;
+  int lastChannel;
   
 public:
   cPluginAtscepg(void);
@@ -59,6 +61,10 @@ cPluginAtscepg::cPluginAtscepg(void)
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
   myATSCFilter = NULL;
+  lastChannel = -1;
+
+  config.timeZone = -5;
+  //config.setTime  = 0;
 }
 
 cPluginAtscepg::~cPluginAtscepg()
@@ -124,13 +130,18 @@ cOsdObject *cPluginAtscepg::MainMenuAction(void)
 cMenuSetupPage *cPluginAtscepg::SetupMenu(void)
 {
   // Return a setup menu in case the plugin supports one.
-  return NULL;
+  return new cATSCSetupMenu;
 }
 
 bool cPluginAtscepg::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  return false;
+  if      (!strcasecmp(Name, "timeZone"))   config.timeZone  = atoi(Value);
+  //else if (!strcasecmp(Name, "setTime"))  config.setTime = atoi(Value);
+  
+  else return false;
+  
+  return true;
 }
 
 bool cPluginAtscepg::Service(const char *Id, void *Data)
@@ -158,8 +169,9 @@ void cPluginAtscepg::ChannelSwitch(const cDevice *Device, int ChannelNumber)
   {
     cChannel* c = Channels.GetByNumber(ChannelNumber); 
     if (c) {
-    	if (c->Modulation() == 7/*VSB_8*/)
+    	if (c->Modulation() == 7/*VSB_8*/ && ChannelNumber != lastChannel)
     	{
+    	  lastChannel = ChannelNumber;
     	  myATSCFilter->Attach(Device);
     	  DEBUG_MSG("ATSC (8-VSB) Channel Detected");
     	}
@@ -173,7 +185,9 @@ void cPluginAtscepg::ChannelSwitch(const cDevice *Device, int ChannelNumber)
   	myATSCFilter->Detach(Device);
   }
 }
+ 
   
-  
+sATSCConfig config;
+
 
 VDRPLUGINCREATOR(cPluginAtscepg); // Don't touch this!

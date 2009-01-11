@@ -36,6 +36,7 @@ diff -Naur vdr/dvbdevice.c vdr-atsc/dvbdevice.c
    return type == cSource::stNone
        || type == cSource::stCable && frontendType == FE_QAM
 +      || type == cSource::stCable && frontendType == FE_ATSC
++      || type == cSource::stTerr  && frontendType == FE_ATSC
        || type == cSource::stSat   && frontendType == FE_QPSK
        || type == cSource::stTerr  && frontendType == FE_OFDM;
  }

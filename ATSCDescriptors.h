@@ -5,7 +5,7 @@
 #include <vector>
 
 #include "ATSCTools.h"
-
+#include "structs.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -44,6 +44,9 @@ public:
 		tPrint("  Descriptor Tag    : 0x%02X\n", descriptor_tag);
 		tPrint("  Descriptor Length : %d\n", descriptor_length);
 	}
+	
+	u8 getTag(void) { return descriptor_tag; }
+	static Descriptor* getDescriptor(const u8* data);
 	
 protected:
   u8 descriptor_tag;
@@ -115,9 +118,13 @@ class ServiceLocationDescriptor : public Descriptor
 {
 public:	
 	ServiceLocationDescriptor(const u8* data);
+	u32 getNumStreams(void) { return streams.size(); }
+	Stream getStream(u32 i) { return streams[i]; }
+	u16 getPCR_PID(void) { return PCR_PID; }
 	
 private:
   u16 PCR_PID;
+  std::vector<Stream> streams;
 };
 
 

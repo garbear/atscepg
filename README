@@ -12,29 +12,35 @@ See the file COPYING for license information.
 
 Description
 -----------
-This plugin (partially) implements the "Program and System Information 
-Protocol for Terrestrial Broadcast and Cable" from the ATSC standard.
+  This plugin (partially) implements the "Program and System Information 
+  Protocol for Terrestrial Broadcast and Cable" from the ATSC standard.
 
-It adds event information from ATSC broadcasts to VDR whenever such a channel
-is tuned.
+  It adds event information from ATSC broadcasts to VDR whenever such a channel
+  is tuned.
 
 
 Notes
 -----
-To receive ATSC broadcasts you must patch VDR with the 
-supplied patch "vdr-1.4.0-atsc.diff"
+- To receive ATSC broadcasts you must patch VDR with the 
+  supplied patch "vdr-1.4.0-atsc.diff"
+
+  The patch was updated for v.0.0.2, it must be reapplied if you were using 
+  the previous version.
+
+- You must set your time zone in the plugin's setup menu.
 
 
 Example
 -------
-of an entry for an ATSC channel:
+  of an entry for an ATSC channel:
 
-PBS-HD:617028615:M8:C:0:49:0;52,53:0:0:3:0:2175:0
+  PBS-HD:617028615:M8:T:0:49:0;52,53:0:0:3:0:2175:0
 
-where: Frequency = 617028615
-       Source id = 3
-       Transponder ID = 2175
-       
-If you cannot determine the SID and TID for your channels, set them to zero
-and the plugin will output the correct values to the console.
+  where: Frequency = 617028615
+         Source id = 3
+         Transponder ID = 2175
+    
+  If you cannot determine the SID and TID for your channels, set them to zero
+  and the plugin will output the correct values to the console.
 
+  The source can be either C (cable) or T (terrestrial)

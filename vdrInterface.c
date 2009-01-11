@@ -5,7 +5,7 @@
 #include  <vdr/channels.h>
 
 #include "vdrInterface.h"
-
+#include "config.h"
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -14,7 +14,7 @@ bool VDRInterface::addEventsToSchedule(EIT& eit)
 {
 	if (!stt) return false; 
 
-	cChannel* c = getChannel( eit.getSourceID() );
+	cChannel* c = getChannel( eit.getSourceID() , eit.getTableID() );
 
 	if (c)
 	{
@@ -33,13 +33,13 @@ bool VDRInterface::addEventsToSchedule(EIT& eit)
 	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id/*, e->start_time*/);
 	    if (!pEvent)
 	    {
-	      DEBUG_MSG("Added Event with ID %d", e->event_id );
+	      // DEBUG_MSG("Added Event with ID %d", e->event_id );
 	      s->AddEvent( createVDREvent(*e) );
 	      modified = true;
 	    } 
 	    else
 	    {
-	      DEBUG_MSG("Updated Event with ID %d", e->event_id );
+	      // DEBUG_MSG("Updated Event with ID %d", e->event_id );
 	      pEvent->SetSeen();
 	      //TODO: Check version info
 	    }
@@ -68,7 +68,7 @@ void VDRInterface::addChannels(VCT& vct)
 	{
 		Channel ch = vct.getChannel(i); 
     
-    cChannel* c = getChannel(ch.source_id );
+    cChannel* c = getChannel(ch.source_id, vct.getTableID());
     
     if (c)
     {
@@ -76,10 +76,8 @@ void VDRInterface::addChannels(VCT& vct)
     }
     else
     {
-    	fprintf(stderr, "\n");
-      DEBUG_MSG("Does your channels.conf have correct values?");
-      DEBUG_MSG("Channel: %s should have", ch.short_name.c_str() );
-      DEBUG_MSG("TID: %d \t SID: %d\n", currentTID, ch.source_id);
+    	fprintf(stderr, "Does your channels.conf have correct values?");
+    	displayChannelInfo(ch, vct.getTableID());
     }
 	}
 }
@@ -91,16 +89,16 @@ bool VDRInterface::addDescription(ETT& ett)
 	u16 eid = ett.getEventID();
 	//u16 sid = ett.getSourceID();
 	
-	cChannel* c = getChannel( ett.getSourceID() );
+	cChannel* c = getChannel( ett.getSourceID() , ett.getTableID() );
 
 	if (c)
 	{
 		//TODO: Other languages...
-		//std::string desc = ett.getString(0);
+		std::string desc = ett.getString(0);
 		
-		std::string desc = "";
-		for (u32 i=0; i<ett.getNumStrings(); i++)
-		  desc += ett.getString(i);
+		//std::string desc = "";
+		//for (u32 i=0; i<ett.getNumStrings(); i++)
+		//  desc += ett.getString(i);
 		
 	  if (eid) // Event ETM
 	  {
@@ -113,7 +111,7 @@ bool VDRInterface::addDescription(ETT& ett)
 	    if (e) 
 	    {	    	
 	      e->SetDescription( desc.c_str() );
-        DEBUG_MSG("Added description for event %d", eid);
+        // DEBUG_MSG("Added description for event %d", eid);
       }
       else return false;
 	  }
@@ -129,11 +127,12 @@ bool VDRInterface::addDescription(ETT& ett)
 
 //----------------------------------------------------------------------------
 
-cChannel* VDRInterface::getChannel(u16 source_id) const
+cChannel* VDRInterface::getChannel(u16 source_id, u8 table_id) const
 {
-	tChannelID channelID_search(0x4000, 0x00, currentTID, source_id);
+  u32 source = (table_id == 0xC9) ? 0x4000 : 0xC000;
+	tChannelID channelID_search(source, 0x00, currentTID, source_id);
    
-  return Channels.GetByChannelID(channelID_search, true, true, true);
+  return Channels.GetByChannelID(channelID_search, true, true/*, true*/);
 }
 
 //----------------------------------------------------------------------------
@@ -147,11 +146,11 @@ void VDRInterface::updateSTT(const u8* data)
 }
 
 //----------------------------------------------------------------------------
+#define	 secs_Between_1Jan1970_6Jan1980	 315982800
 
 time_t VDRInterface::GPStoSystem(time_t gps)
 {
-  //TODO: Remove dependence on STTs to calculate local time
-	return 0;
+	return gps + (config.timeZone * 60*60) + secs_Between_1Jan1970_6Jan1980;
 }
 
 //----------------------------------------------------------------------------
@@ -160,8 +159,9 @@ cEvent* VDRInterface::createVDREvent(Event& event)
 {
 	cEvent* vdrEvent = new cEvent(event.event_id);
 	
-  vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
-  //vdrEvent->SetStartTime( GPStoSystem( event.start_time ) );
+  //vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
+  vdrEvent->SetStartTime( GPStoSystem( event.start_time ) );
+  
   vdrEvent->SetDuration(event.length_in_seconds);
   vdrEvent->SetTitle( event.title_text.c_str() );
   vdrEvent->SetVersion(event.version_number);
@@ -178,5 +178,21 @@ cEvent* VDRInterface::createVDREvent(Event& event)
     
   return vdrEvent; 
 }
+
+//----------------------------------------------------------------------------
+
+void VDRInterface::displayChannelInfo(Channel& ch, u8 table_id) const
+{ 
+  char c = (table_id == 0xC9) ? 'C' : 'T';
+  fprintf(stderr, "\n%s:FREQ:M8:%c:0:", ch.short_name.c_str(), c);
+
+  if (ch.PCR_PID && ch.PCR_PID != ch.vPID)
+    fprintf(stderr, "%d+%d:", ch.vPID, ch.PCR_PID);
+  else
+    fprintf(stderr, "%d:", ch.vPID);
+    
+  fprintf(stderr, "0;%d:0:0:%d:0:%d:0\n\n", ch.aPID, ch.source_id, currentTID); 
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
