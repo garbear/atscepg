@@ -31,6 +31,7 @@ class cPluginAtscepg : public cPlugin, cStatus
 {
 private:
   int lastChannel;
+  int modATSC;
   
 public:
   cPluginAtscepg(void);
@@ -70,6 +71,7 @@ cPluginAtscepg::cPluginAtscepg(void)
   setLogType(L_MSG | L_ERR);
 
   lastChannel = -1;
+  modATSC = 0;
 
   config.timeZone = -5;
   //config.setTime  = 0;
@@ -108,6 +110,14 @@ bool cPluginAtscepg::ProcessArgs(int argc, char *argv[])
 bool cPluginAtscepg::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
+  
+#if VDRVERSNUM < 10700
+  int value = 8;
+#else
+  int value = 10;
+#endif
+  modATSC = MapToDriver(value, ModulationValues);
+  
   return true;
 }
 
@@ -221,7 +231,7 @@ void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
   {
     cChannel* c = Channels.GetByNumber(ChannelNumber); 
     if (c) {
-      if (c->Modulation() == 7/*VSB_8*/ && ChannelNumber != lastChannel)
+      if (c->Modulation() == modATSC && ChannelNumber != lastChannel)
       {
         lastChannel = ChannelNumber;
         cATSCFilter::Instance()->Attach( (cDevice*) Device, c);
