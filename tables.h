@@ -14,19 +14,20 @@
 class PSIPTable
 {
 public:
-	PSIPTable(const u8* data) { update(data); }
-	PSIPTable(void) { }
+	PSIPTable(const u8* data) { Update(data); }
+	PSIPTable(void);
   virtual ~PSIPTable();
-	virtual void print(void) const;
-	virtual void update(const u8* data);
-	u8 getVersion(void) { return version_number; }
-	u8 getTableID(void) { return table_id; }
-	u32 getNumDescriptors(void) { return descriptors.size(); }
-	Descriptor* getDescriptor(u32 i);
-	static u8 extractVersion(const u8* data) { return (data[5] >> 1) & 0x1F; }
+  
+	virtual void Print(void) const;
+	virtual void Update(const u8* data);
+	u8 Version(void) const { return version_number; }
+	u8 TableID(void) const { return table_id; }
+	u32 NumberOfDescriptors(void) const { return descriptors.size(); }
+	Descriptor* GetDescriptor(u32 i) const;
+	static u8 ExtractVersion(const u8* data) { return (data[5] >> 1) & 0x1F; }
 	 
 protected:
-  void addDescriptors(const u8* data, u16 length);
+  void AddDescriptors(const u8* data, u16 length);
   
   u8  table_id;
   //  section_syntax_indicator ‘1’
@@ -43,7 +44,7 @@ protected:
   // PSIP_table_data()
   //u32 CRC_32;
 
-	std::vector<Descriptor*> descriptors;
+	std::vector<Descriptor*> descriptors; //XXX: replace vector with something else!
 };
 
 
@@ -55,15 +56,17 @@ class MGT : public PSIPTable
 {
 public:
 	MGT(const u8* data);
-  //virtual ~MGT() { }	
-  void print(void) const;
-  u32 getNumTables(void) const { return tables.size(); }
-  Table getTable(int i) const  { return tables[i]; }
-  void update(const u8* data);
+  virtual ~MGT() { delete[] tables; }
+  	
+  virtual void Print(void) const;
+  u16 NumberOfTables(void) const { return numberOfTables; }
+  const Table* GetTable(int i) const { return (i<numberOfTables) ? &tables[i] : NULL; }
+  void Update(const u8* data);
   
 private:
-  void parse(const u8* data);
-	std::vector<Table> tables;
+  u16 numberOfTables;
+  void Parse(const u8* data);
+	Table* tables;
 };
 
 
@@ -78,13 +81,14 @@ class STT : public PSIPTable
 public:
 	STT(const u8* data);
 	//virtual ~STT() { }
-	time_t getTime(void) const;
-	void print(void) const;
-	void update(const u8* data);
+	time_t GetTime(void) const;
+	void Print(void) const;
+	void Update(const u8* data);
 	time_t UTCtoLocal(time_t utc) const;
 	
 private:
-  void parse(const u8* data);
+  void Parse(const u8* data);
+  
 	u32 system_time;
 	u8  GPS_UTC_offset;
 	u16 daylight_savings;	
@@ -98,17 +102,18 @@ class EIT : public PSIPTable
 {
 public:
 	EIT(const u8* data);
-  //virtual ~EIT() { }	
+  virtual ~EIT() { delete[] events; }	
   //void print(void);
-  u32 getNumEvents(void) const { return events.size(); }
-  Event getEvent(int i)  const { return events[i]; }
-  u16 getSourceID(void)  const { return source_id; }
+  u8 NumberOfEvents(void) const { return numberOfEvents; }
+  const Event* GetEvent(int i) const { return (i<numberOfEvents) ? &events[i] : NULL; }
+  u16 SourceID(void) const { return source_id; }
   
-  static u16 extractSourceID(const u8* data) { return get_u16( data+3 ); }
+  static u16 ExtractSourceID(const u8* data) { return get_u16( data+3 ); }
   
 private:
+  u8 numberOfEvents;
 	u16 source_id;
-	std::vector<Event> events;
+	Event* events;
 };
 
 
@@ -119,14 +124,17 @@ class VCT : public PSIPTable
 {
 public:
 	VCT(const u8* data);
-  //virtual ~VCT() { }	
-  u32 getNumChannels(void)  const { return channels.size(); }
-  Channel getChannel(int i) const { return channels[i]; }
-  u16 getTID(void) const { return transport_stream_id; }
+  virtual ~VCT() { delete[] channels; }	
+  
+  u8 NumberOfChannels(void)  const { return numberOfChannels; }
+  const Channel* GetChannel(int i) const { return (i<numberOfChannels) ? &channels[i] : NULL; }
+  u16 TID(void) const { return transport_stream_id; }
   
 private:
+  u8 numberOfChannels;
 	u16 transport_stream_id;
-	std::vector<Channel> channels;
+
+	Channel* channels;
 };
 
 
@@ -152,10 +160,10 @@ class ETT : public PSIPTable, public MultipleStringStructure
 public:
 	ETT(const u8* data);
   //virtual ~ETT() { }	
-	u16 getSourceID(void) const { return source_id; }
-	u16 getEventID(void)  const { return event_id; }
+	u16 SourceID(void) const { return source_id; }
+	u16 EventID(void)  const { return event_id; }
 	
-	static u16 extractEventID(const u8* data) { 
+	static u16 ExtractEventID(const u8* data) { 
 	  return (data[11] << 6) | ((data[12] & 0xFC) >> 2); 
 	}
 	

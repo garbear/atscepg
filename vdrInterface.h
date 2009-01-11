@@ -16,20 +16,20 @@ class VDRInterface
 {
 public:
   VDRInterface() { stt = NULL; }
- ~VDRInterface() { if (stt) delete stt; }
+ ~VDRInterface() { delete stt; }
   
-	bool addEventsToSchedule(EIT& eit);
-	void addChannels(VCT& vct);
-	bool addDescription(ETT& ett);
-	void updateSTT(const u8* data); 
+	bool AddEventsToSchedule(const EIT& eit);
+	void AddChannels(const VCT& vct);
+	bool AddDescription(const ETT& ett);
+	void UpdateSTT(const u8* data); 
 	
 private:
-	u16 currentTID;
-  cChannel* getChannel(u16 s_id, u8 table_id) const;
-	cEvent* createVDREvent(Event& event);
-  void displayChannelInfo(Channel& ch, u8 table_id) const;
-	time_t GPStoSystem(time_t gps);
-	
+  cChannel* GetChannel(u16 s_id, u8 table_id) const;
+	cEvent* CreateVDREvent(const Event& event) const;
+  void DisplayChannelInfo(const Channel* ch, u8 table_id) const;
+	time_t GPStoSystem(time_t gps) const;
+
+	u16 currentTID;	
 	STT* stt;
 };
 

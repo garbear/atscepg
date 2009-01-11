@@ -17,9 +17,9 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-static const char *VERSION        = "0.1.0";
-static const char *DESCRIPTION    = "Adds event info for ATSC broadcasts";
-static const char *MAINMENUENTRY  =  NULL; 
+static const char* VERSION        = "0.1.1";
+static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
+static const char* MAINMENUENTRY  =  NULL; 
 
 sATSCConfig config;
 
@@ -35,9 +35,9 @@ private:
 public:
   cPluginAtscepg(void);
   virtual ~cPluginAtscepg();
-  virtual const char *Version(void) { return VERSION; }
-  virtual const char *Description(void) { return DESCRIPTION; }
-  virtual const char *CommandLineHelp(void);
+  virtual const char* Version(void) { return VERSION; }
+  virtual const char* Description(void) { return DESCRIPTION; }
+  virtual const char* CommandLineHelp(void);
   virtual bool ProcessArgs(int argc, char *argv[]);
   virtual bool Initialize(void);
   virtual bool Start(void);
@@ -45,13 +45,13 @@ public:
   virtual void Housekeeping(void);
   virtual void MainThreadHook(void);
   virtual cString Active(void);
-  virtual const char *MainMenuEntry(void) { return MAINMENUENTRY; }
-  virtual cOsdObject *MainMenuAction(void);
-  virtual cMenuSetupPage *SetupMenu(void);
-  virtual bool SetupParse(const char *Name, const char *Value);
-  virtual bool Service(const char *Id, void *Data = NULL);
-  virtual const char **SVDRPHelpPages(void);
-  virtual cString SVDRPCommand(const char *Command, const char *Option, int &ReplyCode);
+  virtual const char* MainMenuEntry(void) { return MAINMENUENTRY; }
+  virtual cOsdObject* MainMenuAction(void);
+  virtual cMenuSetupPage* SetupMenu(void);
+  virtual bool SetupParse(const char* Name, const char* Value);
+  virtual bool Service(const char* Id, void* Data = NULL);
+  virtual const char** SVDRPHelpPages(void);
+  virtual cString SVDRPCommand(const char* Command, const char* Option, int& ReplyCode);
   
 protected:
   virtual void ChannelSwitch(const cDevice* Device, int ChannelNumber);
@@ -221,18 +221,18 @@ void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
   {
     cChannel* c = Channels.GetByNumber(ChannelNumber); 
     if (c) {
-    	if (c->Modulation() == 7/*VSB_8*/ && ChannelNumber != lastChannel)
-    	{
-    	  lastChannel = ChannelNumber;
-    	  cATSCFilter::Instance()->Attach( (cDevice*) Device, c);
+      if (c->Modulation() == 7/*VSB_8*/ && ChannelNumber != lastChannel)
+      {
+        lastChannel = ChannelNumber;
+        cATSCFilter::Instance()->Attach( (cDevice*) Device, c);
         dprint(L_MSG, "ATSC (8-VSB) Channel Detected (#%d)", ChannelNumber); 
-    	}  
+      }  
     }
-  	
+    
   }
   else
   {
-  	cATSCFilter::Instance()->Detach();
+    cATSCFilter::Instance()->Detach();
   }
 }
  

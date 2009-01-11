@@ -33,13 +33,19 @@ private:
   cATSCFilter(void);
  ~cATSCFilter(void);
 
+  void ProcessMGT(const uint8_t* data);
+  void ProcessVCT(const uint8_t* data);
+  void ProcessEIT(const uint8_t* data, uint16_t Pid);
+  void ProcessETT(const uint8_t* data);
+  
+  int GetMGTVersion(void) const;
+  void SetMGTVersion(uint8_t version);
+  
+  std::map<int, uint8_t> MGTVersions;
+  
   static cATSCFilter* instance;
   cDevice* attachedDevice;
   const cChannel* currentChannel;
-
-  std::map<int, uint8_t> MGTVersions;
-  int getMGTVersion(void) const;
-  void setMGTVersion(uint8_t version);
 
   MGT* mgt;
 

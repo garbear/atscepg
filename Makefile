@@ -11,7 +11,7 @@ PLUGIN = atscepg
 
 ### The version number of this plugin (taken from the main source file):
 
-VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).cpp | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = $(shell grep 'static const char\* VERSION *=' $(PLUGIN).cpp | awk '{ print $$6 }' | sed -e 's/[";]//g')
 
 ### The C++ compiler and options:
 
@@ -46,7 +46,8 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 ### The object files (add further files here):
 
 OBJS = $(PLUGIN).o filter.o tables.o types.o huffman.o \
-                   descriptors.o vdrInterface.o setupMenu.o tools.o scanner.o
+                   descriptors.o vdrInterface.o setupMenu.o \
+                   tools.o scanner.o structs.o
 
 ### Implicit rules:
 

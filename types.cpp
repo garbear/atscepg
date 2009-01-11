@@ -4,7 +4,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-const char* tableType(u16 type)
+const char* TableTypeText(u16 type)
 {
 	if      (type == 0x0000)
 		return "Terrestrial VCT with current_next_indicator=’1’";
@@ -38,7 +38,7 @@ const char* tableType(u16 type)
 
 //----------------------------------------------------------------------------
 
-u8 tableID(u16 type)
+u8 TableTypeToTID(u16 type)
 {
 	if      (type == 0x0000 || type == 0x0001) return 0xC8;
 	else if (type == 0x0002 || type == 0x0003) return 0xC9;	
@@ -54,7 +54,7 @@ u8 tableID(u16 type)
 
 //----------------------------------------------------------------------------
 
-const char* modulationMode(u8 type)
+const char* ModulationModeText(u8 type)
 {
 	if      (type == 0x00)	return "Reserved";
 	else if (type == 0x01)	return "Analog";
@@ -71,7 +71,7 @@ const char* modulationMode(u8 type)
 
 //----------------------------------------------------------------------------
 
-const char* ETMLocation(u8 type, u8 tableID)
+const char* ETMLocationText(u8 type, u8 tableID)
 {
 	switch (type)
 	{
@@ -91,7 +91,7 @@ const char* ETMLocation(u8 type, u8 tableID)
 
 //----------------------------------------------------------------------------
 
-const char* serviceType(u8 type)
+const char* ServiceTypeText(u8 type)
 {
 	if      (type == 0x00)	return "Reserved";
 	else if (type == 0x01)	return "Analog Television";
@@ -106,7 +106,7 @@ const char* serviceType(u8 type)
 
 //----------------------------------------------------------------------------
 
-const char* descriptor(u8 type)
+const char* DescriptorText(u8 type)
 {
 	switch (type)
 	{
@@ -131,7 +131,7 @@ const char* descriptor(u8 type)
 
 //----------------------------------------------------------------------------
 
-const char* streamType(u8 type)
+const char* StreamTypeText(u8 type)
 {
 	switch (type)
 	{
@@ -150,35 +150,40 @@ const char* streamType(u8 type)
 
 //----------------------------------------------------------------------------
 
-const char* sampleRates[] = {
-  "48 kbps", "44.1 kbps", "32 kbps", "Reserved",
-  "48 kbps or 44.1 kbps", "48 kbps or 32 kbps",
-  "44.1 kbps or 32 kbps", "48 kbps or 44.1 kbps or 32 kbps"
-};
-
-const char* sampleRate(u8 type)
+const char* SampleRateText(u8 type)
 {
-	if (type < 8) return sampleRates[type];
+	switch (type)
+	{
+	  case  0: return "48 kbps";
+	  case  1: return "44.1 kbps";
+	  case  2: return "32 kbps";
+	  case  3: return "Reserved";
+	  case  4: return "48 kbps or 44.1 kbps";
+	  case  5: return "48 kbps or 32 kbps";
+	  case  6: return "44.1 kbps or 32 kbps";
+	  case  7: return "48 kbps or 44.1 kbps or 32 kbps";
+	}
 	
 	return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
-const char* exactBitRate[19] = {
+static const char* const exactBitRate[19] = {
   "32 kbps",  "40 kbps",  "48 kbps",  "56 kbps",  "64 kbps",
   "80 kbps",  "96 kbps",  "112 kbps", "128 kbps", "160 kbps",
   "192 kbps", "224 kbps", "256 kbps", "320 kbps", "384 kbps",
   "448 kbps", "512 kbps", "576 kbps", "640 kbps"
 };
-const char* upperBitRate[19] = {
+
+static const char* const upperBitRate[19] = {
   "<= 32 kbps",  "<= 40 kbps", "<= 48 kbps",  "<= 56 kbps",  "<= 64 kbps",
   "<= 80 kbps",  "<= 96 kbps", "<= 112 kbps", "<= 128 kbps", "<= 160 kbps",
   "<= 192 kbps","<= 224 kbps", "<= 256 kbps", "<= 320 kbps", "<= 384 kbps",
   "<= 448 kbps","<= 512 kbps", "<= 576 kbps", "<= 640 kbps"
 };
 
-const char* bitRate(u8 type)
+const char* BitRateText(u8 type)
 {
   if (type <= 18)  
     return exactBitRate[type];
@@ -188,32 +193,33 @@ const char* bitRate(u8 type)
   return "Unknown";
 }
 
+
 //----------------------------------------------------------------------------
 
-static const char* surroundModes[] = {
-  "Not indicated",
-  "Not Dolby surround encoded",
-  "Dolby surround encoded",
-  "Reserved",
-};
-
-const char* surroundMode(u8 type)
+const char* SurroundModeText(u8 type)
 {
-	if (type < 4)  return surroundModes[type];
+  switch (type)
+	{
+	  case 0: return "Not indicated";
+	  case 1: return "Not Dolby surround encoded";
+	  case 2: return "Dolby surround encoded";
+	  case 3: return "Reserved";
+	}
 	
   return "Unknown"; 
 }
 
+
 //----------------------------------------------------------------------------
    
-const char* numberOfChannelsStrings[] = {
+static const char* const numberOfChannelsStrings[] = {
   "1 + 1",    "1/0",      "2/0",      "3/0",
   "2/1",      "3/1",      "2/2 ",     "3/2",
   "1",        "<= 2",     "<= 3",     "<= 4",
   "<= 5",     "<= 6",     "Reserved", "Reserved"
 };
 
-const char* numberOfChannels(u8 type)
+const char* NumberOfChannelsText(u8 type)
 {
   if (type < 16) return numberOfChannelsStrings[type]; 
   
@@ -222,7 +228,7 @@ const char* numberOfChannels(u8 type)
 
 //----------------------------------------------------------------------------
 
-const char* genres[] = {
+static const char* const genres[] = {
 "Not Available",    "Reserved (Basic)", "Reserved (Basic)", "Reserved (Basic)",
 "Reserved (Basic)", "Reserved (Basic)", "Reserved (Basic)", "Reserved (Basic)",
 "Reserved (Basic)", "Reserved (Basic)", "Reserved (Basic)", "Reserved (Basic)",
@@ -270,7 +276,7 @@ const char* genres[] = {
 };
 
 
-const char* genre(u8 type)
+const char* GenreText(u8 type)
 {
 	if (type == 0xFF)
 	  return "Not a Category";

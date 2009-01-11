@@ -35,6 +35,19 @@ VDR Plugin 'atscepg' Revision History
 - Always using get_u32, get_u24 and get_u16 where applicable.
 - Fixed CRC 32 check of PSIP tables.
 - Fixed a memory leak in destructor of GenreDescriptor
- 
+  
+
+2008-02-22: Version 0.1.1
+
+- Rewrote cATSCScanner::UpdateLastLine (was unnecessarily complicated).
+- ServiceLocationDescriptor now uses a dynamically allocated array to store
+  streams, instead of a std::vector.
+- MGT tables is now an array instead of a std::vector. 
+- Renamed most functions.
+- cATSCFilter::Process was too long, new functions have been introduced to
+  process the different tables.
+- Fixed spelling in cATSCScanner.
+- Tables, Channels, Streams and Events are now always passed by reference. 
 
 
+  

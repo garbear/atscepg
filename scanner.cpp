@@ -80,7 +80,7 @@ void cATSCScanner::Action(void)
       currentFrequency = ATSCFrequencies[i];
       c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, 7, 999, 999, 999, 999, 999);
 
-      AddLine("Tunning:\t%d Hz", ATSCFrequencies[i]);
+      AddLine("Tuning:\t%d Hz", ATSCFrequencies[i]);
       
       
       device->SwitchChannel(c, false);
@@ -118,24 +118,24 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
   gotVCT = true;
   
   VCT vct(Data);
-  AddLine("\tReceived VCT: found %d channels.", vct.getNumChannels());
+  AddLine("\tReceived VCT: found %d channels.", vct.NumberOfChannels());
 
-  for (u32 i=0; i<vct.getNumChannels(); i++)
+  for (u32 i=0; i<vct.NumberOfChannels(); i++)
 	{
-	  ::Channel ch( vct.getChannel(i) );
+	  const ::Channel* ch = vct.GetChannel(i);
 
-		const char* name = ch.short_name.c_str(); 
-		AddLine("\t%d.%d  %s", ch.majorChannelNumber, ch.minorChannelNumber, name);
+		const char* name = ch->Name(); 
+		AddLine("\t%d.%d  %s", ch->majorChannelNumber, ch->minorChannelNumber, name);
 		
 		if (file) {
 		  char c = (Tid == 0xC9) ? 'C' : 'T';
       fprintf(file, "%s:%d:M8:%c:0:", name, currentFrequency, c);
-      if (ch.PCR_PID && ch.PCR_PID != ch.vPID)
-        fprintf(file, "%d+%d:", ch.vPID, ch.PCR_PID);
+      if (ch->PCR_PID && ch->PCR_PID != ch->vPID)
+        fprintf(file, "%d+%d:", ch->vPID, ch->PCR_PID);
       else
-        fprintf(file, "%d:", ch.vPID);
+        fprintf(file, "%d:", ch->vPID);
         
-      fprintf(file, "0;%d:0:0:%d:0:%d:0\n", ch.aPID, ch.source_id, vct.getTID());  
+      fprintf(file, "0;%d:0:0:%d:0:%d:0\n", ch->aPID, ch->source_id, vct.TID());  
 		}
   }	
   
@@ -160,7 +160,7 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
         if (Running()) {
           condWait.Signal(); // If we are waiting for a VCT, stop.
           Cancel(TIMEOUT+500);
-          AddLine("Scan canceled");
+          AddLine("Scan cancelled");
           state = osContinue;
         }
         else
@@ -197,16 +197,9 @@ void cATSCScanner::AddLine(const char* Text, ...)
 
 void cATSCScanner::UpdateLastLine(const char* Text)
 {
-  cOsdItem* last = Last();
   char* buffer = NULL;
-  asprintf(&buffer, "%s\t%s", last->Text(), Text);
-  cOsdMenu::Del(last->Index()); last = NULL;
-  
-  cOsdItem* item = new cOsdItem(buffer);
-  free(buffer);
-
-  cOsdMenu::Add(item);
-  CursorDown();
+  asprintf(&buffer, "%s\t%s", Last()->Text(), Text);
+  Last()->SetText(buffer, false); // false, so we don't need to free(buffer)
   Display();
 }
 

@@ -2,10 +2,10 @@
 #define __ATSCDESCRIPTORS_H
 
 #include <string>
-#include <vector>
 
 #include "tools.h"
 #include "structs.h"
+
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -13,16 +13,16 @@
 class MultipleStringStructure
 {
 public:
-	MultipleStringStructure(const u8* data);
-	virtual ~MultipleStringStructure();	
-	
-	u32 getNumStrings(void) const { return number_strings; }
-	std::string getString(u32 i) const;
-	virtual void print(void) const;
-	
+  MultipleStringStructure(const u8* data);
+  virtual ~MultipleStringStructure();  
+  
+  u8 NumberOfStrings(void) const { return number_strings; }
+  std::string GetString(u32 i) const;
+  virtual void Print(void) const;
+  
 protected:
-	u8 number_strings;
-	std::vector<std::string> strings;
+  u8 number_strings;
+  std::vector<std::string> strings;
 };
 
 
@@ -32,26 +32,18 @@ protected:
 class Descriptor
 {
 public:
-	Descriptor(const u8* data) 
-	{
-		descriptor_tag    = data[0];
-		descriptor_length = data[1];
-	}
-	
-	virtual ~Descriptor() {}
-	virtual void print(void)
-	{ 
-		dprint(L_DAT, "  Descriptor Tag    : 0x%02X", descriptor_tag);
-		dprint(L_DAT, "  Descriptor Length : %d", descriptor_length);
-	}
-	
-	u8 getTag(void) { return descriptor_tag; }
-	static Descriptor* getDescriptor(const u8* data);
-	
+  Descriptor(const u8* data); 
+  virtual ~Descriptor() { }
+  
+  virtual void Print(void);
+  u8 GetTag(void) { return descriptor_tag; }
+  
+  static Descriptor* CreateDescriptor(const u8* data);
+  
 protected:
   u8 descriptor_tag;
-	u8 descriptor_length;
-	
+  u8 descriptor_length;
+  
 };
 
 
@@ -60,10 +52,10 @@ protected:
 
 class AC3AudioDescriptor : public Descriptor
 {
-public:	
-	AC3AudioDescriptor(const u8* data);
-	void print(void);
-	
+public:  
+  AC3AudioDescriptor(const u8* data);
+  virtual void Print(void);
+  
 private:
   u8  sample_rate_code;
   u8  bsid; 
@@ -90,9 +82,9 @@ private:
 
 class CaptionServiceDescriptor : public Descriptor
 {
-public:	
-	CaptionServiceDescriptor(const u8* data);
-	
+public:  
+  CaptionServiceDescriptor(const u8* data);
+  
 private:
 
 };
@@ -103,11 +95,12 @@ private:
 
 class ExtendedChannelNameDescriptor : public Descriptor
 {
-public:	
-	ExtendedChannelNameDescriptor(const u8* data);
-	std::string getLongChannelName(void) { return long_channel_name_text; }
+public:  
+  ExtendedChannelNameDescriptor(const u8* data);
+  
+  std::string GetLongChannelName(void) { return long_channel_name_text; }
 private:
-	std::string long_channel_name_text;
+  std::string long_channel_name_text;
 };
 
 
@@ -116,15 +109,18 @@ private:
 
 class ServiceLocationDescriptor : public Descriptor
 {
-public:	
-	ServiceLocationDescriptor(const u8* data);
-	u32 getNumStreams(void) { return streams.size(); }
-	Stream getStream(u32 i) { return streams[i]; }
-	u16 getPCR_PID(void) { return PCR_PID; }
-	
+public:  
+  ServiceLocationDescriptor(const u8* data);
+  virtual ~ServiceLocationDescriptor(void) { delete[] streams; }
+  
+  u8 NumberOfStreams(void) const  { return numberOfStreams; }
+  const Stream* GetStream(u8 i)   { return (i<numberOfStreams) ? &streams[i] : NULL; }
+  u16 GetPCR_PID(void) const      { return PCR_PID; }
+  
 private:
   u16 PCR_PID;
-  std::vector<Stream> streams;
+  u8 numberOfStreams;
+  Stream* streams;
 };
 
 
@@ -133,15 +129,16 @@ private:
 
 class GenreDescriptor : public Descriptor
 {
-public:	
-	GenreDescriptor(const u8* data);
-	virtual ~GenreDescriptor() { delete[] attributes; } 
-	u8 getNumGenres(void) { return attribute_count; }
-	u8 getGenre(u8 i);
-	
+public:  
+  GenreDescriptor(const u8* data);
+  virtual ~GenreDescriptor() { delete[] attributes; }
+   
+  u8 NumberOfGenres(void) { return attribute_count; }
+  u8 GetGenre(u8 i);
+  
 private:
-	u8  attribute_count;
-	u8* attributes;
+  u8  attribute_count;
+  u8* attributes;
 };
 
 
@@ -150,9 +147,9 @@ private:
 
 class ContentAdvisoryDescriptor : public Descriptor
 {
-public:	
-	ContentAdvisoryDescriptor(const u8* data);
-	
+public:  
+  ContentAdvisoryDescriptor(const u8* data);
+  
 private:
 };
 

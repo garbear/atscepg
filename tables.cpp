@@ -10,6 +10,21 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
+PSIPTable::PSIPTable(void)
+{ 
+  table_id               = 0;
+  section_length         = 0;
+  table_id_extension     = 0;
+  version_number         = 0;
+  current_next_indicator = 0;
+  section_number         = 0;
+  last_section_number    = 0;
+  protocol_version       = 0;
+}
+
+
+//----------------------------------------------------------------------------
+
 PSIPTable::~PSIPTable()
 {
   for (u32 i=0; i<descriptors.size(); i++)
@@ -19,23 +34,21 @@ PSIPTable::~PSIPTable()
 
 //----------------------------------------------------------------------------
 
-Descriptor* PSIPTable::getDescriptor(u32 i)
+Descriptor* PSIPTable::GetDescriptor(u32 i) const
 {
-  if (i < descriptors.size()) return descriptors[i];
-  
-  return NULL;
+  return (i < descriptors.size()) ? descriptors[i] : NULL;
 }
 
 
 //----------------------------------------------------------------------------
 
-void PSIPTable::addDescriptors(const u8* data, u16 length)
+void PSIPTable::AddDescriptors(const u8* data, u16 length)
 { 
   const u8* dc = data;
 
   while ( dc < data+length )
   { 
-    Descriptor* d = Descriptor::getDescriptor(dc);
+    Descriptor* d = Descriptor::CreateDescriptor(dc);
     if (d) descriptors.push_back( d );
     dc += dc[1] + 2;
   }  
@@ -44,7 +57,7 @@ void PSIPTable::addDescriptors(const u8* data, u16 length)
 
 //----------------------------------------------------------------------------
  
-void PSIPTable::update(const u8* data)
+void PSIPTable::Update(const u8* data)
 {
   table_id               = data[0];
   section_length         = ((data[1] & 0x0F) << 8) | data[2];
@@ -66,7 +79,7 @@ void PSIPTable::update(const u8* data)
 
 //----------------------------------------------------------------------------
 
-void PSIPTable::print() const
+void PSIPTable::Print() const
 {
   dprint(L_DAT, "   Table ID       : 0x%02X", table_id);
   dprint(L_DAT, "   Section Length : %u",     section_length); 
@@ -85,65 +98,60 @@ void PSIPTable::print() const
 
 MGT::MGT(const u8* data): PSIPTable(data)
 {
-  parse(data);
+  Parse(data);
 }
 
 
 //----------------------------------------------------------------------------
 
-void MGT::update(const u8* data)
+void MGT::Update(const u8* data)
 {
-  PSIPTable::update(data);
-  tables.clear();
-  parse(data);
+  PSIPTable::Update(data);
+  delete[] tables;
+  Parse(data);
 }  
 
 
 //----------------------------------------------------------------------------
 
-void MGT::parse(const u8* data)
+void MGT::Parse(const u8* data)
 {
-  u16 tables_defined = get_u16( data+9 );
+  numberOfTables = get_u16( data+9 );
+  tables = new Table[numberOfTables];
   
   const uchar* d = data + 11;
-  for (u16 i=0; i<tables_defined; i++)
+  for (u16 i=0; i<numberOfTables; i++)
   {
-    u16 table_type     = get_u16( d );
-    u16 table_type_pid = ((d[2] & 0x1F) << 8) | d[3];
+    u16 tableType = get_u16( d );
+    
+    tables[i].table_type = tableType;
+    tables[i].pid = ((d[2] & 0x1F) << 8) | d[3];
+    tables[i].tid = TableTypeToTID(tableType);  
+    
     //u8  table_type_version_number = d[4] & 0x1F; 
     //u32 number_bytes              = get_u32( d+5 );
     u16 table_type_descriptors_length = ((d[9] & 0x0F) << 8) | d[10];
-  
-    Table t( table_type_pid, tableID(table_type), table_type);
-    tables.push_back(t);
 
     d += 11 + table_type_descriptors_length;
     
+    // Inner Loop Descriptors
     // Can only receive stuffing or user private descriptors: ignore
-    /*// Inner Loop Descriptors
-    const u8* dc = d + 11;
-    while ( dc < d )
-    { 
-      dc += dc[1] + 2;
-    }*/ 
+    // AddDescriptors(d+11, table_type_descriptors_length);
   }
   
-  
-  // u16 descriptors_length = ((d[0] & 0x0F) << 8) | d[1];
-  
-  /*// Outer Loop Descriptors
-  const u8* dc = d + 2;
-  while ( dc < d +2 + descriptors_length )
-  { 
-    dc += dc[1] + 2;
-  } */
+  // Outer Loop Descriptors
+  //u16 descriptors_length = ((d[0] & 0x0F) << 8) | d[1];
+  //AddDescriptors(d+2, descriptors_length);
 
 }
 
 
 //----------------------------------------------------------------------------
 
-void MGT::print() const {}
+void MGT::Print() const
+{
+ 
+}
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -151,22 +159,22 @@ void MGT::print() const {}
 
 STT::STT(const u8* data) : PSIPTable(data)
 {
-  parse(data);
+  Parse(data);
 }
 
 
 //----------------------------------------------------------------------------
 
-void STT::update(const u8* data)
+void STT::Update(const u8* data)
 {
-  PSIPTable::update(data);
-  parse(data);
+  PSIPTable::Update(data);
+  Parse(data);
 }  
 
 
 //----------------------------------------------------------------------------
 
-void STT::parse(const u8* data)
+void STT::Parse(const u8* data)
 {
   // Number of seconds since 00:00:00 UTC Jan 6, 1980
   system_time      = get_u32( data+9 );
@@ -198,7 +206,7 @@ time_t STT::UTCtoLocal(time_t utcTime) const
 
 //----------------------------------------------------------------------------
 
-time_t STT::getTime(void) const 
+time_t STT::GetTime(void) const 
 { 
   return UTCtoLocal(system_time);
 }
@@ -206,10 +214,10 @@ time_t STT::getTime(void) const
 
 //----------------------------------------------------------------------------
 
-void STT::print(void) const
+void STT::Print(void) const
 {
-  time_t now = getTime();
-  dprint(L_DAT, "Current Time: %s", ctime( &now) );
+  time_t now = GetTime();
+  dprint(L_DAT, "STT: Current Time is %s", ctime( &now) );
 }
 
 
@@ -219,50 +227,45 @@ void STT::print(void) const
 EIT::EIT(const u8* data) : PSIPTable(data)
 {  
   source_id = table_id_extension;
-  u8  num_events_in_section  = data[9];
-
+  numberOfEvents  = data[9];
+  events = new Event[numberOfEvents];
+  
   const uchar* d = data + 10;
-  for (u8 j=0; j<num_events_in_section; j++)
+  for (u8 i = 0; i < numberOfEvents; i++)
   {
     // reserved     2   ‘11’
-    u16 event_id      = ((d[0] & 0x3F) << 8) | d[1];
+    u16 event_id = ((d[0] & 0x3F) << 8) | d[1];
     
     // number of GPS seconds since 00:00:00 UTC, January 6, 1980
-    u32 start_time    = get_u32( d+2 );
+    u32 start_time = get_u32( d+2 );
     
     // reserved     2   ‘11’
     u8  ETM_location      = (d[6] & 0x30) >> 4;
     u32 length_in_seconds = ((d[6] & 0x0F) << 16) | (d[7] << 8) | d[8];
     u8  title_length      = d[9];
     
-    //MultipleStringStructure title_text( &(d[10]) );
     MultipleStringStructure title_text( d + 10 );
-    
-    Event event;
 
-    event.event_id          = event_id;
-    event.start_time        = start_time;
-    event.length_in_seconds = length_in_seconds;
-    event.version_number    = version_number;
-    event.table_id          = table_id;
-    event.ETM_location      = ETM_location; 
+    events[i].event_id          = event_id;
+    events[i].start_time        = start_time;
+    events[i].length_in_seconds = length_in_seconds;
+    events[i].version_number    = version_number;
+    events[i].table_id          = table_id;
+    events[i].ETM_location      = ETM_location; 
     
     // Assume single string title
-    if (title_text.getNumStrings() > 0)
-      event.title_text = title_text.getString(0);
+    if (title_text.NumberOfStrings() > 0)
+      events[i].SetTitleText( title_text.GetString(0).c_str() );
     else
-      event.title_text = "No Title";
+      events[i].SetTitleText("No Title");
     
     // reserved     4   ‘1111’
     u16 descriptors_length = ((d[10 + title_length] & 0x0F) << 8) | d[11 + title_length];
   
     // Deal with and remove these descriptors right here...
-    //addDescriptors(d+12+title_length, descriptors_length);
-     
-    //d = &(d[12 + title_length + descriptors_length]);
-    d += 12 + title_length + descriptors_length;
+    // AddDescriptors(d+12+title_length, descriptors_length);
 
-    events.push_back( event );
+    d += 12 + title_length + descriptors_length;
   } 
   
 }
@@ -274,17 +277,18 @@ EIT::EIT(const u8* data) : PSIPTable(data)
 VCT::VCT(const u8* data) : PSIPTable(data)
 {
   transport_stream_id = table_id_extension;
-  u8  num_channels_in_section = data[9];
+  numberOfChannels    = data[9];
+  channels = new Channel[numberOfChannels];
   
   const uchar* d = data + 10;
-  for (u8 i=0; i<num_channels_in_section; i++)
+  for (u8 i = 0; i < numberOfChannels; i++)
   { 
     //TODO: Proper conversion from UTF-16 (or is this good enough?)
     std::string short_name = "";
     for (int k=0; k<7; k++) short_name += (d[2*k] << 8) | d[2*k+1]; 
     
-    u16 major_channel_number = (((d[14] & 0x0F) << 8) | (d[15] & 0xFC)) >> 2;
-    u16 minor_channel_number = ((d[15] & 0x03) << 8) | d[16];
+    channels[i].majorChannelNumber = (((d[14] & 0x0F) << 8) | (d[15] & 0xFC)) >> 2;
+    channels[i].minorChannelNumber = ((d[15] & 0x03) << 8) | d[16];
     /*
     u8  modulation_mode      = d[17];
     u32 carrier_frequency    = get_u32( d+18 );
@@ -305,38 +309,34 @@ VCT::VCT(const u8* data) : PSIPTable(data)
     u1  hide_guide           = (d[26] & 0x02) >> 1;    
     u8  service_type         = (d[27] & 0x3F);
     */
-    u16 source_id            = get_u16( d+28 );
-    
-    Channel ch(transport_stream_id, source_id, short_name); 
-    ch.majorChannelNumber =  major_channel_number;
-    ch.minorChannelNumber =  minor_channel_number;
+    channels[i].transport_stream_id = transport_stream_id;
+    channels[i].source_id           = get_u16( d+28 );
+    channels[i].SetName( short_name.c_str() );
      
     u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
     
-    addDescriptors(d+32, descriptors_length);
+    AddDescriptors(d+32, descriptors_length);
     
     //TODO: More in depth descriptor handling
-    for (u32 i=0; i<descriptors.size(); i++)
+    for (size_t j=0; j<descriptors.size(); j++)
     {
-      Descriptor* d = descriptors[i];
-      if (d->getTag() == 0xA1) // Service Location Descriptor
+      Descriptor* d = descriptors[j];
+      if (d->GetTag() == 0xA1) // Service Location Descriptor
       {
         ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(d);
-        ch.PCR_PID = sld->getPCR_PID();
+        channels[i].PCR_PID = sld->GetPCR_PID();
         
-        for (u32 j=0; j<sld->getNumStreams(); j++)
+        for (u8 k = 0; k < sld->NumberOfStreams(); k++)
         {
-          Stream s = sld->getStream(j);
-          if (s.stream_type == 0x02) ch.vPID = s.elementary_PID;
-          else if (s.stream_type == 0x81) ch.aPID = s.elementary_PID;
-          else dprint(L_ERR, "Found unknown stream type %0x%02X", s.stream_type);
+          const Stream* s = sld->GetStream(k);
+          if      (s->stream_type == 0x02) channels[i].vPID = s->elementary_PID;
+          else if (s->stream_type == 0x81) channels[i].aPID = s->elementary_PID;
+          else    dprint(L_ERR, "Found unknown stream type 0x%02X", s->stream_type);
         }
       }
     }
     
     d += 32 + descriptors_length;
-    
-    channels.push_back( ch );  
   }
    
   /*
@@ -357,7 +357,7 @@ RRT::RRT(const u8* data) : PSIPTable(data)
   u8  rating_region_name_length =  data[9]; 
   
   MultipleStringStructure rating_region_name_text( data + 10 );
-  rating_region_name_text.print(); 
+  rating_region_name_text.Print(); 
 
   u8  dimensions_defined = data[10 + rating_region_name_length];
   
@@ -367,7 +367,7 @@ RRT::RRT(const u8* data) : PSIPTable(data)
     u8 dimension_name_length = d[0];
 
     MultipleStringStructure dimension_name_text( d + 1 );
-    dimension_name_text.print();
+    dimension_name_text.Print();
                      
     // reserved    3   ‘111’
     //u1  graduated_scale = (d[1+dimension_name_length] & 0x10) >> 4;
@@ -380,11 +380,11 @@ RRT::RRT(const u8* data) : PSIPTable(data)
       u8 abbrev_rating_value_length = d[0];
 
       MultipleStringStructure abbrev_rating_value_text( d + 1 );
-      abbrev_rating_value_text.print();
+      abbrev_rating_value_text.Print();
                  
       u8 rating_value_length = d[1+abbrev_rating_value_length];
       MultipleStringStructure rating_value_text( d + 2 + abbrev_rating_value_length );          
-      abbrev_rating_value_text.print();
+      abbrev_rating_value_text.Print();
       
       d += 2 + abbrev_rating_value_length + rating_value_length;
     }
