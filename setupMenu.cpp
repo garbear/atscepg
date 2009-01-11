@@ -36,9 +36,13 @@ eOSState cATSCSetupMenu::ProcessKey(eKeys key)
 {
   eOSState state = cOsdMenu::ProcessKey(key);
  
+  if (key == kOk) {
+    Store();
+  }
+    
   if (state == osUnknown && scan == Get(Current()) && key == kOk) {
     state = AddSubMenu(new cATSCScanner);
-  }  
+  } 
     
   return state;  
 }
