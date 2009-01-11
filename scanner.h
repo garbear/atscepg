@@ -29,6 +29,7 @@ private:
   cCondWait condWait;
   bool gotVCT;
   int currentFrequency;
+  const char* dir;
   FILE* file;
 };
 

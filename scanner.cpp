@@ -30,6 +30,7 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
 	Set(0x1FFB, 0xC8); // VCT-T
 	Set(0x1FFB, 0xC9); // VCT-C
 	
+	dir = cPlugin::ConfigDirectory();
 	file = NULL;
 	currentFrequency = 0;
 	
@@ -54,7 +55,7 @@ void cATSCScanner::Action(void)
   dprint(L_DBGV, "ATSC Scanner thread started.");
   
   char* fn = NULL;
-  asprintf(&fn, "%s/%s", cPlugin::ConfigDirectory(), FILE_NAME);
+  asprintf(&fn, "%s/%s", dir, FILE_NAME);
   file = fopen(fn, "w");
   free(fn);
   if (file == NULL) AddLine("Could not open output file.");
