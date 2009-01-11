@@ -1,0 +1,41 @@
+diff -Naur vdr/channels.c vdr-atsc/channels.c
+--- vdr/channels.c	2006-04-17 08:18:57.000000000 -0400
++++ vdr-atsc/channels.c	2006-08-25 22:01:42.000000000 -0400
+@@ -51,6 +51,7 @@
+ 
+ const tChannelParameterMap ModulationValues[] = {
+   {   0, QPSK },
++  {   8, VSB_8 },
+   {  16, QAM_16 },
+   {  32, QAM_32 },
+   {  64, QAM_64 },
+diff -Naur vdr/dvbdevice.c vdr-atsc/dvbdevice.c
+--- vdr/dvbdevice.c	2006-04-01 09:19:43.000000000 -0500
++++ vdr-atsc/dvbdevice.c	2006-08-25 22:03:53.000000000 -0400
+@@ -263,6 +263,18 @@
+          lockTimeout = DVBC_LOCK_TIMEOUT;
+          }
+          break;
++    case FE_ATSC: { // ATSC
++ 
++         // Frequency and symbol rate:
++      
++         Frontend.frequency = FrequencyToHz(channel.Frequency());
++         Frontend.inversion = fe_spectral_inversion_t(channel.Inversion());
++         Frontend.u.vsb.modulation = fe_modulation_t(channel.Modulation());
++                  
++         tuneTimeout = DVBC_TUNE_TIMEOUT;
++         lockTimeout = DVBC_LOCK_TIMEOUT;
++         }
++         break;         
+     case FE_OFDM: { // DVB-T
+ 
+          // Frequency and OFDM paramaters:
+@@ -755,6 +767,7 @@
+   int type = Source & cSource::st_Mask;
+   return type == cSource::stNone
+       || type == cSource::stCable && frontendType == FE_QAM
++      || type == cSource::stCable && frontendType == FE_ATSC
+       || type == cSource::stSat   && frontendType == FE_QPSK
+       || type == cSource::stTerr  && frontendType == FE_OFDM;
+ }
