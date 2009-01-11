@@ -12,9 +12,11 @@ private:
   
 protected:
   virtual void Store(void);
+  virtual eOSState ProcessKey(eKeys key);
   
 public:
   cATSCSetupMenu(void);
+  cOsdItem* scan;
 };
 
 

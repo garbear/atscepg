@@ -1,9 +1,9 @@
 #include <string>
 #include <vector>
 
-#include "ATSCDescriptors.h"
-#include "ATSCHuffman.h"
-#include "ATSCTypes.h"
+#include "descriptors.h"
+#include "huffman.h"
+#include "types.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -13,7 +13,6 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
 {
 	number_strings = data[0];
 
-	
 	for (u8 i=0; i<number_strings; i++)
 	{
 		//TODO: use ISO_639_language_code
@@ -21,7 +20,7 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
 		u8  number_segments = data[4];
 		
 		std::string str;
-		const uchar* d = &(data[5]);
+		const uchar* d = data + 5;
 		for (u8 j=0; j<number_segments; j++) 
 		{
       u8 compression_type = d[0];
@@ -32,12 +31,12 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
       switch (compression_type)
       {
       	case 0x00: // No compression
-      		dec = uncompressed(&(d[3]), number_bytes, mode); 
+      		dec = Uncompressed( d+3 , number_bytes, mode); 
       		break;
       		
       	case 0x01: // Huffman - Tables C.4 & C.5
       	case 0x02: // Huffman - Tables C.6 & C.7
-      	  dec = atsc_huffman1_to_string(&(d[3]), number_bytes, compression_type);
+      	  dec = ATSCHuffman1toString(d+3, number_bytes, compression_type);
       		break;
       		
 				// 0x03 to 0xAF: reserved
@@ -48,13 +47,13 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
       };
       
       str += dec; // Add decompressed segment
-      
-      		
+   		
 		}
 		
 		strings.push_back(str);
  	}
 }
+
 
 //----------------------------------------------------------------------------
 
@@ -62,16 +61,18 @@ MultipleStringStructure::~MultipleStringStructure()
 {
 
 }
-	
+
+
 //----------------------------------------------------------------------------
 
 void MultipleStringStructure::print(void) const
 {
 	for (u8 i=0; i<number_strings; i++)
 	{
-		fprintf(stderr, "%s\n", strings[i].c_str() );
+    dprint(L_DAT, "%s", strings[i].c_str() );
 	}
 }
+
 
 //----------------------------------------------------------------------------
 
@@ -131,8 +132,8 @@ Descriptor* Descriptor::getDescriptor(const u8* data)
     return new GenreDescriptor(data);
 	
 	else {
-		    DEBUG_MSG("Unknown Descriptor: %02X", data[0]);
-		    return NULL;
+	  dprint(L_ERR, "Unknown Descriptor: %02X", data[0]);
+		return NULL;
   }
 }
 
@@ -151,7 +152,7 @@ AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
   full_svc         =  data[4] & 0x01;
   langcod          =  data[5];
 
-	const u8* d = &(data[6]);
+	const u8* d = data + 6;
 	//-------
   if(num_channels == 0) // 1+1 mode
   {
@@ -183,9 +184,9 @@ AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
   		text += d[1 + i];	
   else           // UTF-16
     for (u8 i=0; i<textlen; i+=2)
-  		text += (d[1 + i] << 8) | d[1 + i+1];
+  		text += get_u16( d+1+i ); //(d[1 + i] << 8) | d[1 + i+1];
   
-  d = &(d[1+textlen]);			
+  d += 1+textlen;			
   //-------		
 
 	language_flag   = (d[0] & 0x80) >> 7;
@@ -194,13 +195,13 @@ AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
   
   if (language_flag) 
   {
-    language = get_u24( &(d[1]) );
-    d+=3;
+    language = get_u24( d + 1 );
+    d += 3;
   }
   if(language_flag_2) 
   {
-    language_2 = get_u24( &(d[1]) );
-    d+=3;
+    language_2 = get_u24( d + 1 );
+    d += 3;
   }
   
   d++;
@@ -218,15 +219,15 @@ AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
 
 void AC3AudioDescriptor::print(void)
 {
-	tPrint("\n========== AC-3 Descriptor ==========\n");
-	tPrint("  Descriptor Length : %d\n", descriptor_length);
-	tPrint("  Sample Rate Code  : %s\n", sampleRate(sample_rate_code) );
+	dprint(L_DAT, "========== AC-3 Descriptor ==========");
+	dprint(L_DAT, "  Descriptor Length : %d", descriptor_length);
+	dprint(L_DAT, "  Sample Rate Code  : %s", sampleRate(sample_rate_code) );
   //bsid; 
-  tPrint("  Bit Rate Code     : %s\n", bitRate(bit_rate_code) );
-  tPrint("  Surround Mode     : %s\n", surroundMode(surround_mode) );
+  dprint(L_DAT, "  Bit Rate Code     : %s", bitRate(bit_rate_code) );
+  dprint(L_DAT, "  Surround Mode     : %s", surroundMode(surround_mode) );
   //bsmod;
-  tPrint("  Number Channels   : %s\n", numberOfChannels(num_channels) );
-  tPrint("=====================================\n\n");
+  dprint(L_DAT, "  Number Channels   : %s", numberOfChannels(num_channels) );
+  dprint(L_DAT, "=====================================");
   //full_svc;
   //langcod;
   //langcod2;
@@ -248,12 +249,12 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
 {
 	u8 number_of_services = (data[2] & 0x1F);
 	
-	const u8* d = &(data[3]);
+	const u8* d = data + 3;
 	for (u8 i=0; i<number_of_services; i++)
 	{
-		u32 ISO_639_language_code = (d[0] << 16) | (d[1] << 8) | d[2];
+		u32 ISO_639_language_code = get_u24(d);
 		
-		u1  digital_cc            = (d[3] & 0x80) >> 7;
+		u1  digital_cc = (d[3] & 0x80) >> 7;
 		
 		if (!digital_cc) 
 		  u1 line21_field = (d[3] & 0x01); // Deprecated
@@ -263,7 +264,7 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
 		u1 easy_reader       = (d[4] & 0x80) >> 7;
 		u1 wide_aspect_ratio = (d[4] & 0x40) >> 6;
 		
-		d = &(d[6]);
+		d += 6;
 	}
 }
 
@@ -273,7 +274,7 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
 // UNTESTED
 ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data): Descriptor(data)
 {
-  MultipleStringStructure long_channel_name( &(data[3]) );
+  MultipleStringStructure long_channel_name( data + 3 );
   
   // Assume we get a single string
   long_channel_name_text = long_channel_name.getString(0);
@@ -289,16 +290,16 @@ ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descripto
 	
 	u8  number_elements = data[4];
 	
-	const u8* d = &(data[5]);
+	const u8* d = data + 5;
 	for (u8 i=0; i< number_elements; i++) 
 	{
-	  Stream s(d[0], ((d[1] & 0x1F) << 8) | d[2], (d[3] << 16) | (d[4] << 8) | d[5]);
+	  Stream s(d[0], ((d[1] & 0x1F) << 8) | d[2], get_u24(d+3) );
 		//u8  stream_type = d[0];
 		//u16 elementary_PID = ((d[1] & 0x1F) << 8) | d[2];
-		//u32 ISO_639_language_code = (d[3] << 16) | (d[4] << 8) | d[5];
+		//u32 ISO_639_language_code = get_u24(d+3);
 		
 		streams.push_back(s);
-		d = &(d[6]);
+		d += 6;
 	}
 }
 
@@ -315,8 +316,8 @@ GenreDescriptor::GenreDescriptor(const u8* data): Descriptor(data)
 	{
 		attributes[i] = data[3 + i];
 	}
-
 }
+
 
 //----------------------------------------------------------------------------
 
@@ -335,7 +336,7 @@ ContentAdvisoryDescriptor::ContentAdvisoryDescriptor(const u8* data): Descriptor
 {
 	u8 rating_region_count = data[2] & 0x3F;
 	
-	const u8* d = &(data[3]);
+	const u8* d = data + 3;
 	for (u8 i=0; i<rating_region_count; i++)
 	{		
 		u8 rating_region    = d[0];
@@ -351,11 +352,11 @@ ContentAdvisoryDescriptor::ContentAdvisoryDescriptor(const u8* data): Descriptor
     
     if (rating_description_length > 0)
     {
-      MultipleStringStructure rating_description_text( &(d[2 + 2*rated_dimensions + 1]) );
+      MultipleStringStructure rating_description_text( d + 2 + 2*rated_dimensions + 1 );
       rating_description_text.print(); 
     }
      
-    d = &(d[2 + 2*rated_dimensions + 1 + rating_description_length]);
+    d += 2 + 2*rated_dimensions + 1 + rating_description_length;
 
 	}
 }

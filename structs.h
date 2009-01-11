@@ -1,9 +1,9 @@
-#ifndef __CHANNELID_H
-#define __CHANNELID_H
+#ifndef __ATSC_STRUCTS_H
+#define __ATSC_STRUCTS_H
 
 #include <string>
 
-#include "ATSCTools.h"
+#include "tools.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -60,10 +60,24 @@ struct Channel
 	u16 vPID;
 	u16 PCR_PID;
 	
-  Channel(u16 ts_id, u16 s_id, std::string s="") { transport_stream_id = ts_id; source_id = s_id; short_name=s;}
+	u16 majorChannelNumber;
+	u16 minorChannelNumber;
+		
+  Channel(u16 ts_id, u16 s_id, std::string s="", u16 ap = 0, u16 vp = 0, u16 pp = 0) 
+  { 
+    transport_stream_id = ts_id; 
+    source_id = s_id; 
+    short_name=s;
+    aPID = ap;
+    vPID = vp;
+    PCR_PID = 0; 
+    majorChannelNumber = minorChannelNumber = 0;
+  }
   
-/*   // Make this class STL "safe"
-  
+
+
+/*   // Make this class STL "safe" 
+//XXX: these methods are no longer valid due to new data, update before use!
   Channel(const Channel& arg) 
   {
   	transport_stream_id = arg.transport_stream_id;
@@ -78,7 +92,7 @@ struct Channel
   	short_name = arg.short_name;
   	return *this;
   }
-    
+     
   bool operator== (const Channel& arg) const 
   { 
     return transport_stream_id == arg.transport_stream_id && source_id == arg.source_id;
@@ -107,22 +121,6 @@ struct Channel
 //////////////////////////////////////////////////////////////////////////////
 
 
-struct PTS
-{
-	u16 pid;  u8 tid;  u16 sid; u16 eid;
-	
-	PTS(u16 p, u8 t, u16 s, u16 e) { pid=p; tid=t; sid=s; eid=e; }
-	
-	bool operator== (const PTS& arg) const 
-  { 
-    return pid == arg.pid && tid == arg.tid && sid == arg.sid && eid == arg.eid;
-  }
-};
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-
 struct Stream
 {
 	Stream(u8 s, u16 p, u32 l) { stream_type=s; elementary_PID=p; ISO_639_language_code=l; }
@@ -135,4 +133,4 @@ struct Stream
 //////////////////////////////////////////////////////////////////////////////
 
 
-#endif //__CHANNELID_H
+#endif //__ATSC_STRUCTS_H

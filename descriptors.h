@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-#include "ATSCTools.h"
+#include "tools.h"
 #include "structs.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -41,8 +41,8 @@ public:
 	virtual ~Descriptor() {}
 	virtual void print(void)
 	{ 
-		tPrint("  Descriptor Tag    : 0x%02X\n", descriptor_tag);
-		tPrint("  Descriptor Length : %d\n", descriptor_length);
+		dprint(L_DAT, "  Descriptor Tag    : 0x%02X", descriptor_tag);
+		dprint(L_DAT, "  Descriptor Length : %d", descriptor_length);
 	}
 	
 	u8 getTag(void) { return descriptor_tag; }
@@ -135,7 +135,7 @@ class GenreDescriptor : public Descriptor
 {
 public:	
 	GenreDescriptor(const u8* data);
-	virtual ~GenreDescriptor() { delete attributes; } 
+	virtual ~GenreDescriptor() { delete[] attributes; } 
 	u8 getNumGenres(void) { return attribute_count; }
 	u8 getGenre(u8 i);
 	

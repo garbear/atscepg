@@ -4,8 +4,8 @@
 #include <vector>
 #include <string>
 
-#include "ATSCTools.h"
-#include "ATSCDescriptors.h"
+#include "tools.h"
+#include "descriptors.h"
 #include "structs.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -41,7 +41,7 @@ protected:
   u8  last_section_number;
   u8  protocol_version;
   // PSIP_table_data()
-  u32 CRC_32;
+  //u32 CRC_32;
 
 	std::vector<Descriptor*> descriptors;
 };
@@ -62,7 +62,7 @@ public:
   void update(const u8* data);
   
 private:
-  inline void parse(const u8* data);
+  void parse(const u8* data);
 	std::vector<Table> tables;
 };
 
@@ -84,7 +84,7 @@ public:
 	time_t UTCtoLocal(time_t utc) const;
 	
 private:
-  inline void parse(const u8* data);
+  void parse(const u8* data);
 	u32 system_time;
 	u8  GPS_UTC_offset;
 	u16 daylight_savings;	
@@ -103,6 +103,8 @@ public:
   u32 getNumEvents(void) const { return events.size(); }
   Event getEvent(int i)  const { return events[i]; }
   u16 getSourceID(void)  const { return source_id; }
+  
+  static u16 extractSourceID(const u8* data) { return get_u16( data+3 ); }
   
 private:
 	u16 source_id;
@@ -131,11 +133,11 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 
-class RTT : public PSIPTable
+class RRT : public PSIPTable
 {
 public:
-	RTT(const u8* data);
-  //virtual ~RTT() { }	
+	RRT(const u8* data);
+  //virtual ~RRT() { }	
 
 private:
 	
@@ -150,8 +152,12 @@ class ETT : public PSIPTable, public MultipleStringStructure
 public:
 	ETT(const u8* data);
   //virtual ~ETT() { }	
-	u16 getSourceID(void) const {return source_id; }
-	u16 getEventID(void)  const {return event_id; }
+	u16 getSourceID(void) const { return source_id; }
+	u16 getEventID(void)  const { return event_id; }
+	
+	static u16 extractEventID(const u8* data) { 
+	  return (data[11] << 6) | ((data[12] & 0xFC) >> 2); 
+	}
 	
 private:
   u16 source_id;

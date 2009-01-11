@@ -9,22 +9,27 @@
 #include <vdr/plugin.h>
 #include <vdr/status.h>
 
-#include "ATSCFilter.h"
+#include "filter.h"
 #include "config.h"
-#include "ATSCSetupMenu.h"
-
-static const char *VERSION        = "0.0.2";
-static const char *DESCRIPTION    = "Adds event info for ATSC broadcasts";
-static const char *MAINMENUENTRY  =  NULL; 
+#include "setupMenu.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
 
 
-class cPluginAtscepg : public cPlugin, cStatus {
+static const char *VERSION        = "0.1.0";
+static const char *DESCRIPTION    = "Adds event info for ATSC broadcasts";
+static const char *MAINMENUENTRY  =  NULL; 
+
+sATSCConfig config;
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+class cPluginAtscepg : public cPlugin, cStatus 
+{
 private:
-  // Add any member variables or functions you may need here.
-  cATSCFilter* myATSCFilter;
   int lastChannel;
   
 public:
@@ -53,6 +58,8 @@ protected:
   };
 
 
+//////////////////////////////////////////////////////////////////////////////
+
 
 cPluginAtscepg::cPluginAtscepg(void)
 {
@@ -60,18 +67,25 @@ cPluginAtscepg::cPluginAtscepg(void)
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
-  myATSCFilter = NULL;
+  setLogType(L_MSG | L_ERR);
+
   lastChannel = -1;
 
   config.timeZone = -5;
   //config.setTime  = 0;
 }
 
+
+//----------------------------------------------------------------------------
+
 cPluginAtscepg::~cPluginAtscepg()
 {
   // Clean up after yourself!
-  if (myATSCFilter) delete myATSCFilter;
+  cATSCFilter::Destroy();
 }
+
+
+//----------------------------------------------------------------------------
 
 const char *cPluginAtscepg::CommandLineHelp(void)
 {
@@ -79,19 +93,26 @@ const char *cPluginAtscepg::CommandLineHelp(void)
   return NULL;
 }
 
+
+//----------------------------------------------------------------------------
+
 bool cPluginAtscepg::ProcessArgs(int argc, char *argv[])
 {
   // Implement command line argument processing here if applicable.
   return true;
 }
 
+
+//----------------------------------------------------------------------------
+
 bool cPluginAtscepg::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  myATSCFilter = new cATSCFilter;
-  
   return true;
 }
+
+
+//----------------------------------------------------------------------------
 
 bool cPluginAtscepg::Start(void)
 {
@@ -99,15 +120,24 @@ bool cPluginAtscepg::Start(void)
   return true;
 }
 
+
+//----------------------------------------------------------------------------
+
 void cPluginAtscepg::Stop(void)
 {
   // Stop any background activities the plugin shall perform.
 }
 
+
+//----------------------------------------------------------------------------
+
 void cPluginAtscepg::Housekeeping(void)
 {
   // Perform any cleanup or other regular tasks.
 }
+
+
+//----------------------------------------------------------------------------
 
 void cPluginAtscepg::MainThreadHook(void)
 {
@@ -115,11 +145,17 @@ void cPluginAtscepg::MainThreadHook(void)
   // WARNING: Use with great care - see PLUGINS.html!
 }
 
+
+//----------------------------------------------------------------------------
+
 cString cPluginAtscepg::Active(void)
 {
   // Return a message string if shutdown should be postponed
   return NULL;
 }
+
+
+//----------------------------------------------------------------------------
 
 cOsdObject *cPluginAtscepg::MainMenuAction(void)
 {
@@ -127,22 +163,30 @@ cOsdObject *cPluginAtscepg::MainMenuAction(void)
   return NULL;
 }
 
+
+//----------------------------------------------------------------------------
+
 cMenuSetupPage *cPluginAtscepg::SetupMenu(void)
 {
   // Return a setup menu in case the plugin supports one.
   return new cATSCSetupMenu;
 }
 
+
+//----------------------------------------------------------------------------
+
 bool cPluginAtscepg::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
   if      (!strcasecmp(Name, "timeZone"))   config.timeZone  = atoi(Value);
   //else if (!strcasecmp(Name, "setTime"))  config.setTime = atoi(Value);
-  
   else return false;
   
   return true;
 }
+
+
+//----------------------------------------------------------------------------
 
 bool cPluginAtscepg::Service(const char *Id, void *Data)
 {
@@ -150,11 +194,17 @@ bool cPluginAtscepg::Service(const char *Id, void *Data)
   return false;
 }
 
+
+//----------------------------------------------------------------------------
+
 const char **cPluginAtscepg::SVDRPHelpPages(void)
 {
   // Return help text for SVDRP commands this plugin implements
   return NULL;
 }
+
+
+//----------------------------------------------------------------------------
 
 cString cPluginAtscepg::SVDRPCommand(const char *Command, const char *Option, int &ReplyCode)
 {
@@ -163,7 +213,9 @@ cString cPluginAtscepg::SVDRPCommand(const char *Command, const char *Option, in
 }
 
 
-void cPluginAtscepg::ChannelSwitch(const cDevice *Device, int ChannelNumber)
+//----------------------------------------------------------------------------
+
+void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
 { 
   if (ChannelNumber)
   {
@@ -172,22 +224,22 @@ void cPluginAtscepg::ChannelSwitch(const cDevice *Device, int ChannelNumber)
     	if (c->Modulation() == 7/*VSB_8*/ && ChannelNumber != lastChannel)
     	{
     	  lastChannel = ChannelNumber;
-    	  myATSCFilter->Attach(Device);
-    	  DEBUG_MSG("ATSC (8-VSB) Channel Detected");
-    	}
-  	  
-  	  //DEBUG_MSG("Channel Switched to %d \t ID: %s \t Mod: %d", ChannelNumber, (const char *) (c->GetChannelID()).ToString(), c->Modulation() );
-  	}
+    	  cATSCFilter::Instance()->Attach( (cDevice*) Device, c);
+        dprint(L_MSG, "ATSC (8-VSB) Channel Detected (#%d)", ChannelNumber); 
+    	}  
+    }
   	
   }
   else
   {
-  	myATSCFilter->Detach(Device);
+  	cATSCFilter::Instance()->Detach();
   }
 }
  
   
-sATSCConfig config;
+//////////////////////////////////////////////////////////////////////////////
 
 
 VDRPLUGINCREATOR(cPluginAtscepg); // Don't touch this!
+
+

@@ -5,6 +5,7 @@
 #include  <vdr/channels.h>
 
 #include "vdrInterface.h"
+#include "filter.h"
 #include "config.h"
 
 //////////////////////////////////////////////////////////////////////////////
@@ -70,13 +71,12 @@ void VDRInterface::addChannels(VCT& vct)
     
     cChannel* c = getChannel(ch.source_id, vct.getTableID());
     
-    if (c)
-    {
+    if (c) {
 			//TODO: Add/Update channels
     }
     else
     {
-    	fprintf(stderr, "Does your channels.conf have correct values?");
+    	fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
     	displayChannelInfo(ch, vct.getTableID());
     }
 	}
@@ -132,7 +132,7 @@ cChannel* VDRInterface::getChannel(u16 source_id, u8 table_id) const
   u32 source = (table_id == 0xC9) ? 0x4000 : 0xC000;
 	tChannelID channelID_search(source, 0x00, currentTID, source_id);
    
-  return Channels.GetByChannelID(channelID_search, true, true/*, true*/);
+  return Channels.GetByChannelID(channelID_search, true, true);
 }
 
 //----------------------------------------------------------------------------
@@ -160,7 +160,9 @@ cEvent* VDRInterface::createVDREvent(Event& event)
 	cEvent* vdrEvent = new cEvent(event.event_id);
 	
   //vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
-  vdrEvent->SetStartTime( GPStoSystem( event.start_time ) );
+  time_t st = GPStoSystem( event.start_time );
+  st = st - (st % 60); // Round down to the nearest minute
+  vdrEvent->SetStartTime( st );
   
   vdrEvent->SetDuration(event.length_in_seconds);
   vdrEvent->SetTitle( event.title_text.c_str() );
@@ -184,7 +186,8 @@ cEvent* VDRInterface::createVDREvent(Event& event)
 void VDRInterface::displayChannelInfo(Channel& ch, u8 table_id) const
 { 
   char c = (table_id == 0xC9) ? 'C' : 'T';
-  fprintf(stderr, "\n%s:FREQ:M8:%c:0:", ch.short_name.c_str(), c);
+  int freq = cATSCFilter::Frequency();
+  fprintf(stderr, "\n%s:%d:M8:%c:0:", ch.short_name.c_str(), freq, c);
 
   if (ch.PCR_PID && ch.PCR_PID != ch.vPID)
     fprintf(stderr, "%d+%d:", ch.vPID, ch.PCR_PID);

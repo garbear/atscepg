@@ -4,8 +4,8 @@
 
 #include  <vdr/channels.h>
 
-#include "ATSCTables.h"
-#include "ATSCTools.h"
+#include "tables.h"
+#include "tools.h"
 #include "structs.h"
 
 

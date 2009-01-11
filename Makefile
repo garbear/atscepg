@@ -11,7 +11,7 @@ PLUGIN = atscepg
 
 ### The version number of this plugin (taken from the main source file):
 
-VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).c | awk '{ print $$6 }' | sed -e 's/[";]//g')
+VERSION = $(shell grep 'static const char \*VERSION *=' $(PLUGIN).cpp | awk '{ print $$6 }' | sed -e 's/[";]//g')
 
 ### The C++ compiler and options:
 
@@ -45,12 +45,12 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o ATSCFilter.o ATSCTables.o ATSCTypes.o ATSCHuffman.o \
-                   ATSCDescriptors.o vdrInterface.o ATSCSetupMenu.o
+OBJS = $(PLUGIN).o filter.o tables.o types.o huffman.o \
+                   descriptors.o vdrInterface.o setupMenu.o tools.o scanner.o
 
 ### Implicit rules:
 
-%.o: %.c
+%.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c $(DEFINES) $(INCLUDES) $<
 
 # Dependencies:
@@ -58,7 +58,7 @@ OBJS = $(PLUGIN).o ATSCFilter.o ATSCTables.o ATSCTypes.o ATSCHuffman.o \
 MAKEDEP = $(CXX) -MM -MG
 DEPFILE = .dependencies
 $(DEPFILE): Makefile
-	@$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.c) > $@
+	@$(MAKEDEP) $(DEFINES) $(INCLUDES) $(OBJS:%.o=%.cpp) > $@
 
 -include $(DEPFILE)
 

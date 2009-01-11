@@ -8,11 +8,33 @@ VDR Plugin 'atscepg' Revision History
 
 2006-12-02: Version 0.0.2
 
-- Derived classes of PSIPTable can now use descriptors
-- Removed dependence on DN EIT patch
-- Fixed for loop in cATSCFilter::delE_T
-- No longer getting EPG info when switching to the currently tuned channel
-- Fixed conversion of GPS time to local time
-- Added Setup menu with configurable time zone
-- Fixed the function displayChannelInfo
-- Better distinction between cable and terrestrial channels
+- Derived classes of PSIPTable can now use descriptors.
+- Removed dependence on DN EIT patch.
+- Fixed for loop in cATSCFilter::delE_T.
+- No longer getting EPG info when switching to the currently tuned channel.
+- Fixed conversion of GPS time to local time.
+- Added Setup menu with configurable time zone.
+- Fixed the function displayChannelInfo.
+- Better distinction between cable and terrestrial channels.
+
+
+2007-12-28: Version 0.1.0
+
+- Added ATSC channel scanner.
+- Renamed source files.
+- Fixed types for 64 bit systems.
+- cATSCFilter is now a singleton.
+- cATSCFilter is now properly detached when object is destroyed.
+- Version numbers of MGTs are now stored, to prevent unnecessary updating.
+- Replaced DEBUG_MSG with the more flexible dprint.
+- Now displaying channel frequency in displayChannelInfo.
+- Better EIT/ETT handling, each event is only processed once.
+- EITs and ETTs are now only parsed when we are sure we need the data.
+- Cleaned-up pointer arithmetic in table parsing routines.
+- Code style of huffman.cpp/h is now consistent with the other files.
+- Always using get_u32, get_u24 and get_u16 where applicable.
+- Fixed CRC 32 check of PSIP tables.
+- Fixed a memory leak in destructor of GenreDescriptor
+ 
+
+

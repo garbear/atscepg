@@ -1,27 +1,40 @@
 #ifndef __ATSCTOOLS_H
 #define __ATSCTOOLS_H
 
-
+#include <stdint.h>
+#include <stdio.h>
 
 // Disable this to remove debug messages
 #define AE_DEBUG
 
-
 #ifdef AE_DEBUG
-	#define DEBUG_MSG(x...) fprintf(stderr, "ATSC EPG: ");fprintf(stderr, x);fprintf(stderr, "\n")
+
+void setLogType(uint8_t type);
+
+void dprint(uint8_t type, const char* msg, ...);
+
 #else
-	#define DEBUG_MSG(x...) 
-#endif
 
+#define dprint(type, msg, args...)
+#define setLogType(x)
 
-#define tPrint(x...) fprintf(stderr, x);
+#endif //AE_DEBUG
 
+// Log Types 
+#define L_NONE 0x00
+#define L_MSG  0x01
+#define L_ERR  0x02
+#define L_DBG  0x04
+#define L_DBGV 0x08
+#define L_DAT  0x10
+#define L_OTH  0x20
+#define L_ALL  0xFF
   
-#define u1  bool
-#define u8  unsigned char
-#define u16 unsigned short
-#define u32 unsigned int
-#define uchar unsigned char
+#define u1    bool
+#define u8    uint8_t
+#define u16   uint16_t
+#define u32   uint32_t
+#define uchar uint8_t
 
 
 

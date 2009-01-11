@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <string>
 
-#include "ATSCTools.h"
+#include "tools.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -13,9 +13,9 @@
 #define uint unsigned int
 
 
-std::string atsc_huffman1_to_string(const u8* compressed, u32 size, u32 table);
+std::string ATSCHuffman1toString(const u8* compressed, u32 size, u32 table);
 
-std::string uncompressed(const u8* data, u8 number_bytes, u8 mode);  
+std::string Uncompressed(const u8* data, u8 number_bytes, u8 mode);  
 
 
 //////////////////////////////////////////////////////////////////////////////
