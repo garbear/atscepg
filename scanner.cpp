@@ -82,8 +82,10 @@ void cATSCScanner::Action(void)
   
 #if VDRVERSNUM < 10700    
   c->SetTerrTransponderData(cSource::stTerr, 0, 999, 7, 999, 999,999, 999, 999);
-#else
+#elif VDRVERSNUM < 10702
   c->SetTerrTransponderData(cSource::stTerr, 0, 999, MapToDriver(10, ModulationValues), 999, 999,999, 999, 999, 0, 0);
+#else
+  c->SetTerrTransponderData(cSource::stTerr, 0, 999, MapToDriver(10, ModulationValues), 999, 999,999, 999, 999);
 #endif 
 
 #if VDRVERSNUM < 10500  
@@ -105,9 +107,12 @@ void cATSCScanner::Action(void)
 
 #if VDRVERSNUM < 10700      
       c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, 7, 999, 999, 999, 999, 999);
-#else
+#elif VDRVERSNUM < 10702
       c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999, 0, 0);
+#else
+      c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999);
 #endif  
+ 
 
       AddLine("Tuning:\t%d Hz", ATSCFrequencies[i]);
       
