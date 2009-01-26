@@ -27,6 +27,7 @@
 #include "filter.h"
 #include "config.h"
 
+
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -50,18 +51,25 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 	  	const Event* e = eit.GetEvent(i);
 
 	    // Check if event already exit
-	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id/*, e->start_time*/);
+	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id, GPStoSystem(e->start_time) );
 	    if (!pEvent)
 	    {
-	      dprint(L_DBG, "Added Event with ID %d", e->event_id );
-	      s->AddEvent( CreateVDREvent(*e) );
+	      dprint(L_VDR, "New event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
+	      s->AddEvent( CreateVDREvent(e) );
 	      modified = true;
 	    } 
 	    else
 	    {
-	      dprint(L_DBG, "Updated Event with ID %d", e->event_id );
+	      dprint(L_VDR, "Old event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
+	      dprint(L_VDR, "      was: id %d (sid: ?, tid: %d, ver: %d)", pEvent->EventID(), pEvent->TableID(), pEvent->Version());
 	      pEvent->SetSeen();
-	      //TODO: Check version info
+	      
+	      if (pEvent->Version() < e->version_number)
+	      {
+	        dprint(L_VDR, "           new version!");
+	        ToVDREvent(e, pEvent, true);
+	        modified = true;  
+	      }
 	    }
     }
     
@@ -95,8 +103,8 @@ void VDRInterface::AddChannels(const VCT& vct)
     }
     else
     {
-    	fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
-    	DisplayChannelInfo(ch, vct.TableID());
+    	//fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
+    	//DisplayChannelInfo(ch, vct.TableID());
     }
 	}
 }
@@ -167,41 +175,55 @@ void VDRInterface::UpdateSTT(const u8* data)
 
 time_t VDRInterface::GPStoSystem(time_t gps) const
 {
-	return gps + (config.timeZone * 60*60) + secs_Between_1Jan1970_6Jan1980;
+  time_t time = gps + (config.timeZone * 60*60) + secs_Between_1Jan1970_6Jan1980;
+	return (time - (time % 60)); // Round down to the nearest minute
 }
 
 //----------------------------------------------------------------------------
 
-cEvent* VDRInterface::CreateVDREvent(const Event& event) const
+cEvent* VDRInterface::CreateVDREvent(const Event* event) const
 {
-	cEvent* vdrEvent = new cEvent(event.event_id);
+	cEvent* vdrEvent = new cEvent(event->event_id);
 	
-  //vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
-  time_t st = GPStoSystem( event.start_time );
-  st = st - (st % 60); // Round down to the nearest minute
-  vdrEvent->SetStartTime( st );
-  
-  vdrEvent->SetDuration(event.length_in_seconds);
-  vdrEvent->SetTitle( event.TitleText() );
-  vdrEvent->SetVersion(event.version_number);
-  vdrEvent->SetTableID(event.table_id);
-  
-  vdrEvent->SetShortText("");
-  
-  if (event.ETM_location == 0x00) // There is no description for this event
-    vdrEvent->SetDescription("No description provided for this event.");
-  else
-    vdrEvent->SetDescription("");
-    
-  vdrEvent->SetRunningStatus(0);
+  ToVDREvent(event, vdrEvent, false);
     
   return vdrEvent; 
 }
 
+
+//----------------------------------------------------------------------------
+
+void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) const
+{
+  if (!event || !vdrEvent) return;
+  
+  if (setId)
+    vdrEvent->SetEventID(event->event_id);
+  
+  //vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
+
+  vdrEvent->SetStartTime( GPStoSystem(event->start_time) );
+  
+  vdrEvent->SetDuration(event->length_in_seconds);
+  vdrEvent->SetTitle( event->TitleText() );
+  vdrEvent->SetVersion(event->version_number);
+  vdrEvent->SetTableID(event->table_id);
+  
+  //vdrEvent->SetShortText("");
+  
+  if (event->ETM_location == 0x00) // There is no description for this event
+    vdrEvent->SetDescription("No description provided for this event.");
+  //else
+  //  vdrEvent->SetDescription("");
+    
+  // vdrEvent->SetRunningStatus(0); 
+}
+
+
 //----------------------------------------------------------------------------
 
 void VDRInterface::DisplayChannelInfo(const Channel* ch, u8 table_id) const
-{ 
+{ //TODO: Update for VDR 1.7.x. Do we really need this anyway?
   char c = (table_id == 0xC9) ? 'C' : 'T';
   int freq = cATSCFilter::Frequency();
   fprintf(stderr, "\n%s:%d:M8:%c:0:", ch->Name(), freq, c);

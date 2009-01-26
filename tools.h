@@ -47,6 +47,7 @@ void dprint(uint8_t type, const char* msg, ...);
 #define L_DBGV 0x08
 #define L_DAT  0x10
 #define L_OTH  0x20
+#define L_VDR  0x40
 #define L_ALL  0xFF
   
 #define u1    bool

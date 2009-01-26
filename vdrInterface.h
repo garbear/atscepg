@@ -44,7 +44,8 @@ public:
 	
 private:
   cChannel* GetChannel(u16 s_id, u8 table_id) const;
-	cEvent* CreateVDREvent(const Event& event) const;
+  void ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) const;
+	cEvent* CreateVDREvent(const Event* event) const;
   void DisplayChannelInfo(const Channel* ch, u8 table_id) const;
 	time_t GPStoSystem(time_t gps) const;
 
