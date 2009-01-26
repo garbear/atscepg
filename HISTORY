@@ -48,6 +48,18 @@ VDR Plugin 'atscepg' Revision History
   process the different tables.
 - Fixed spelling in cATSCScanner.
 - Tables, Channels, Streams and Events are now always passed by reference. 
+  
 
+2009-01-26: Version 0.2.0
 
+- Fixed: same event were added multiple times, not updated.
+- Fixed malformed patch.
+- Added new patch for VDR 1.7.2 and above.
+- Minor fixes for VDR 1.7.x.
+- Fixed setup menu.
+- Fixed compile error with GCC 4.3.1.
+- Added missing #include in structs.cpp
+- Now calling cPlugin::ConfigDirectory() in thread-safe way.
+- Updated license information.
+- Added missing virtual to cATSCScanner's destructor
   

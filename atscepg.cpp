@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-static const char* VERSION        = "0.1.1";
+static const char* VERSION        = "0.2.0";
 static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char* MAINMENUENTRY  =  NULL; 
 
