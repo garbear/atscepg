@@ -339,7 +339,7 @@ VCT::VCT(const u8* data) : PSIPTable(data)
     //TODO: More in depth descriptor handling
     for (size_t j=0; j<descriptors.size(); j++)
     {
-      Descriptor* d = descriptors[j];
+      Descriptor* d = descriptors[j]; 
       if (d->GetTag() == 0xA1) // Service Location Descriptor
       {
         ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(d);
@@ -359,6 +359,7 @@ VCT::VCT(const u8* data) : PSIPTable(data)
         channels[i].SetLongName( ecnd->GetLongChannelName().c_str() );
       }   
     }
+    descriptors.clear();
     
     d += 32 + descriptors_length;
   }
