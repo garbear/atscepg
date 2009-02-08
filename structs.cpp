@@ -139,7 +139,8 @@ Channel::Channel(void)
   PCR_PID             = 0;
   majorChannelNumber  = 0;
   minorChannelNumber  = 0;
-  short_name          = NULL;
+  short_name          = strdup("");
+  long_name           = strdup("");
 }
 
 
@@ -148,6 +149,7 @@ Channel::Channel(void)
 Channel::~Channel(void)
 {
   free(short_name);
+  free(long_name);
 }
 
 
@@ -163,6 +165,7 @@ Channel::Channel(const Channel& arg)
   majorChannelNumber  = arg.majorChannelNumber;
   minorChannelNumber  = arg.minorChannelNumber;
   short_name          = strdup(arg.short_name);
+  long_name           = strdup(arg.long_name);
 }
 
 
@@ -178,17 +181,28 @@ const Channel& Channel::operator= (const Channel& arg)
   majorChannelNumber  = arg.majorChannelNumber;
   minorChannelNumber  = arg.minorChannelNumber;
   free(short_name);
+  free(long_name);
   short_name          = strdup(arg.short_name);
+  long_name           = strdup(arg.long_name);
 }
 
 
 //----------------------------------------------------------------------------
  
-void Channel::SetName(const char* text)
+void Channel::SetShortName(const char* shortName)
 {
   free(short_name);
-  short_name = strdup(text);
+  short_name = strdup(shortName);
 }
 
-  
+
+//----------------------------------------------------------------------------
+
+void Channel::SetLongName(const char* longName) 
+{
+  free(long_name);
+  long_name  = strdup(longName);
+}
+
+
 //////////////////////////////////////////////////////////////////////////////  

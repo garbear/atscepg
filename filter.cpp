@@ -52,8 +52,8 @@ cATSCFilter::cATSCFilter()
   Set(0x1FFB, 0xC7); // MGT
   Set(0x1FFB, 0xC8); // VCT-T
   Set(0x1FFB, 0xC9); // VCT-C
-  Set(0x1FFB, 0xCA); // RRT
-  Set(0x1FFB, 0xCD); // SST
+  // Set(0x1FFB, 0xCA); // RRT
+  // Set(0x1FFB, 0xCD); // SST
 
   // Set(0x1FFB, 0xD3); // DCCT
   // Set(0x1FFB, 0xD4); // DCCSCT
@@ -184,7 +184,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       dprint(L_MSG, "Received STT.");
-      vdrInterface.UpdateSTT(Data);  
+      //vdrInterface.UpdateSTT(Data);  
       lastScanSTT = time(NULL);
       break;
       
@@ -242,7 +242,8 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
     if (t->tid == 0xCC) // ETT 
     { 
       if (t->table_type == 0x0004) { // Channel ETT
-        dprint(L_DBG, "MGT: Found channel ETT PID"); //TODO: Use Channel ETT.
+        dprint(L_DBG, "MGT: Found channel ETT PID");
+        // Usually provides a short description, not very useful.
       }  
       else { // Event ETT 
         dprint(L_DBG, "MGT: Found ETT PID: %d", t->pid);

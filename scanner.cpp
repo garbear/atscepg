@@ -161,8 +161,10 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 	{
 	  const ::Channel* ch = vct.GetChannel(i);
 
-		const char* name = ch->Name(); 
-		AddLine("\t%d.%d  %s", ch->majorChannelNumber, ch->minorChannelNumber, name);
+		const char* shortName = ch->ShortName();
+		const char* longName  = ch->LongName();
+		
+		AddLine("\t%d.%d  %s", ch->majorChannelNumber, ch->minorChannelNumber, shortName);
 		
 		if (file) {
 		  int chanNum = Number(ch->majorChannelNumber, ch->minorChannelNumber);
@@ -173,11 +175,18 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 		  }
 		  
 		  char c = (Tid == 0xC9) ? 'C' : 'T';
-#if VDRVERSNUM < 10700 		  
-      fprintf(file, "%s:%d:M8:%c:0:", name, currentFrequency, c);
+		  
+#if VDRVERSNUM < 10700
+      const char* prm = "M8";
 #else
-      fprintf(file, "%s:%d:A0M10P0:%c:0:", name, currentFrequency, c);
+      const char* prm = "B6M10";
 #endif
+
+      if (strcmp(longName, "") == 0)  
+        fprintf(file, "%s:%d:%s:%c:0:", shortName, currentFrequency, prm, c);
+      else  
+        fprintf(file, "%s,%s:%d:%s:%c:0:", longName, shortName, currentFrequency, prm, c);
+        
       if (ch->PCR_PID && ch->PCR_PID != ch->vPID)
         fprintf(file, "%d+%d:", ch->vPID, ch->PCR_PID);
       else
@@ -198,6 +207,9 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
   eOSState state = cOsdMenu::ProcessKey(Key);
 
   if (state == osUnknown)
+  {
+    state = osContinue;
+    
     switch (Key)
     {
       case kBack:
@@ -216,6 +228,7 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
       default:
         break;    
     }
+  }
     
   return state;  
 }

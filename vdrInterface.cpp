@@ -33,8 +33,6 @@
 
 bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 {
-	// if (!stt) return false; 
-
 	cChannel* c = GetChannel( eit.SourceID() , eit.TableID() );
 
 	if (c)
@@ -114,7 +112,7 @@ void VDRInterface::AddChannels(const VCT& vct)
 bool VDRInterface::AddDescription(const ETT& ett)
 {
 	u16 eid = ett.EventID();
-	
+
 	cChannel* c = GetChannel( ett.SourceID() , ett.TableID() );
 
 	if (c)
@@ -142,7 +140,7 @@ bool VDRInterface::AddDescription(const ETT& ett)
 	  }
 	  else // Channel ETM
 	  {
-			//TODO: Use this as long channel name?
+			dprint(L_DBG, "Got Channel ETM");
 	  }
 	}
 	else return false;
@@ -224,6 +222,7 @@ void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) 
 
 void VDRInterface::DisplayChannelInfo(const Channel* ch, u8 table_id) const
 { //TODO: Update for VDR 1.7.x. Do we really need this anyway?
+/*
   char c = (table_id == 0xC9) ? 'C' : 'T';
   int freq = cATSCFilter::Frequency();
   fprintf(stderr, "\n%s:%d:M8:%c:0:", ch->Name(), freq, c);
@@ -233,7 +232,8 @@ void VDRInterface::DisplayChannelInfo(const Channel* ch, u8 table_id) const
   else
     fprintf(stderr, "%d:", ch->vPID);
     
-  fprintf(stderr, "0;%d:0:0:%d:0:%d:0\n\n", ch->aPID, ch->source_id, currentTID); 
+  fprintf(stderr, "0;%d:0:0:%d:0:%d:0\n\n", ch->aPID, ch->source_id, currentTID);
+  */ 
 }
 
 

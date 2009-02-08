@@ -302,7 +302,7 @@ VCT::VCT(const u8* data) : PSIPTable(data)
   const uchar* d = data + 10;
   for (u8 i = 0; i < numberOfChannels; i++)
   { 
-    //TODO: Proper conversion from UTF-16 (or is this good enough?)
+    //TODO: Proper conversion from UTF-16
     std::string short_name = "";
     for (int k=0; k<7; k++) short_name += (d[2*k] << 8) | d[2*k+1]; 
     
@@ -330,7 +330,7 @@ VCT::VCT(const u8* data) : PSIPTable(data)
     */
     channels[i].transport_stream_id = transport_stream_id;
     channels[i].source_id           = get_u16( d+28 );
-    channels[i].SetName( short_name.c_str() );
+    channels[i].SetShortName( short_name.c_str() );
      
     u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
     
@@ -346,13 +346,18 @@ VCT::VCT(const u8* data) : PSIPTable(data)
         channels[i].PCR_PID = sld->GetPCR_PID();
         
         for (u8 k = 0; k < sld->NumberOfStreams(); k++)
-        {
+        { 
           const Stream* s = sld->GetStream(k);
           if      (s->stream_type == 0x02) channels[i].vPID = s->elementary_PID;
           else if (s->stream_type == 0x81) channels[i].aPID = s->elementary_PID;
           else    dprint(L_ERR, "Found unknown stream type 0x%02X", s->stream_type);
         }
-      }
+      } 
+      else if (d->GetTag() == 0xA0) // Extended Channel Name Descriptor
+      {
+        ExtendedChannelNameDescriptor* ecnd = dynamic_cast<ExtendedChannelNameDescriptor*>(d);
+        channels[i].SetLongName( ecnd->GetLongChannelName().c_str() );
+      }   
     }
     
     d += 32 + descriptors_length;

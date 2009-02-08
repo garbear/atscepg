@@ -78,8 +78,11 @@ struct Channel
 
   const Channel& operator= (const Channel& arg);
   
-  void SetName(const char* text);
-  const char* Name(void) const { return short_name; }
+  void SetShortName(const char* shortName);
+  void SetLongName(const char* longName);
+  
+  const char* ShortName(void) const { return short_name; }
+  const char* LongName(void)  const { return long_name;  }
   
   u16 transport_stream_id;
   u16 source_id;
@@ -91,6 +94,7 @@ struct Channel
 		
 private:
   char* short_name;
+  char* long_name;
 };
 
 
