@@ -9,22 +9,41 @@ Latest version available at: http://www.fepg.org/atscepg.html
 See the file COPYING for license information.
 
 
-
+-------------------------------------------------------------------------------
 Description
------------
-  This plugin (partially) implements the "Program and System Information 
-  Protocol for Terrestrial Broadcast and Cable" from the ATSC standard.
+-------------------------------------------------------------------------------
 
-  It adds event information from ATSC broadcasts to VDR whenever such a channel
-  is tuned.
+This plugin (partially) implements the "Program and System Information 
+Protocol for Terrestrial Broadcast and Cable" from the ATSC standard.
 
-  This plugin also includes an ATSC channel scanner that is accessible through
-  the plugin's setup menu. If any channels are found they will be stored in
-  the file <VDR's Config Directory>/plugins/channels-atsc.conf, the user can then
-  copy the desired entries into channels.conf
+It adds event information from ATSC broadcasts to VDR whenever such a channel
+is tuned.
 
+This plugin also includes an ATSC channel scanner that is accessible through
+the plugin's setup menu. If any channels are found they will be stored in
+the file
+
+            <VDR's Config Directory>/plugins/atscepg/channels.conf
+            
+the user can then copy the desired entries into channels.conf. The channel
+numbers are determined by the "number" script.
+
+
+-------------------------------------------------------------------------------
+Installation
+-------------------------------------------------------------------------------
+
+Make sure to copy all the files in the "config" directory into
+
+                   <VDR's Config Directory>/plugins/atscepg/
+  
+and edit them according to your needs.
+
+
+-------------------------------------------------------------------------------
 Notes
------
+-------------------------------------------------------------------------------
+
 - To receive ATSC broadcasts you must patch VDR with the 
   supplied patch: "vdr-atsc-0.0.2.diff"       (Works with VDR 1.4.x to 1.6.x)
                   "vdr-1.7.2-atsc-0.0.3.diff" (Works with VDR 1.7.2 and above)

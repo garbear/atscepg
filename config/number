@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Channel numbering for ATSC EPG
+#
+# Accepts three parameters: 
+#   $1 : Major channel number
+#   $2 : Minor channel number
+#
+# Outputs the channel number. 
+# There are two special return values: -1 (Ignore this channel)
+#                                       0 (Do not number)
+#
+# This script can be replaced by any executable following the above conventions.
+# 
+
+let "chan = $1 * 10 + $2"
+echo "$chan"
+

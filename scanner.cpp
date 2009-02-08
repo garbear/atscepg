@@ -33,7 +33,7 @@
 
 #define TIMEOUT     1000
 #define VCT_TIMEOUT 5000
-#define FILE_NAME   "channels-atsc.conf"
+#define FILE_NAME   "channels.conf"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,7 +48,9 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
 	Set(0x1FFB, 0xC8); // VCT-T
 	Set(0x1FFB, 0xC9); // VCT-C
 	
-	dir = cPlugin::ConfigDirectory();
+	dir = cPlugin::ConfigDirectory("atscepg");
+	asprintf(&numberCmd, "%s/number", cPlugin::ConfigDirectory("atscepg"));
+	
 	file = NULL;
 	currentFrequency = 0;
 	
@@ -62,6 +64,8 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
 cATSCScanner::~cATSCScanner(void) 
 {
   Cancel(TIMEOUT+500);
+  free(numberCmd);
+  
   dprint(L_DBGV, "ATSC Scanner Destroyed.");
 }
 
@@ -161,6 +165,13 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 		AddLine("\t%d.%d  %s", ch->majorChannelNumber, ch->minorChannelNumber, name);
 		
 		if (file) {
+		  int chanNum = Number(ch->majorChannelNumber, ch->minorChannelNumber);
+		  if (chanNum == -1)
+		    continue;
+		  else if (chanNum != 0) {
+		    fprintf(file, ":@%d\n", chanNum);
+		  }
+		  
 		  char c = (Tid == 0xC9) ? 'C' : 'T';
 #if VDRVERSNUM < 10700 		  
       fprintf(file, "%s:%d:M8:%c:0:", name, currentFrequency, c);
@@ -237,6 +248,42 @@ void cATSCScanner::UpdateLastLine(const char* Text)
   asprintf(&buffer, "%s\t%s", Last()->Text(), Text);
   Last()->SetText(buffer, false); // false, so we don't need to free(buffer)
   Display();
+}
+
+
+//----------------------------------------------------------------------------
+
+int cATSCScanner::Number(uint16_t major, uint16_t minor)
+{  
+  char* result = NULL;
+  char* cmd = NULL;
+  int num = 0;
+  
+  asprintf(&cmd, "%s %d %d", numberCmd, major, minor);
+  
+  cPipe p;
+  if (p.Open(cmd, "r"))
+  {
+    int l = 0;
+    int c;
+    while ((c = fgetc(p)) != EOF) {
+      if (l % 20 == 0)
+        result = (char*) realloc(result, l + 21);
+      result[l++] = c;
+    }
+    if (result)
+      result[l] = 0;
+    p.Close();
+    
+    num = atoi(result);
+    free(result);
+  }
+  else
+    dprint(L_ERR, "ERROR: can't open pipe for command '%s'", cmd);
+ 
+  free(cmd);
+  
+  return num;
 }
 
 
