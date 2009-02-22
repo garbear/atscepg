@@ -63,7 +63,7 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
         
         default:
           dprint(L_ERR, "Got unknown compression type 0x%02X", compression_type);
-          dec = "?";
+          dec = "";
       }
       
       str += dec; // Add decompressed segment

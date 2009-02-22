@@ -206,20 +206,10 @@ void STT::Parse(const u8* data)
 
 //----------------------------------------------------------------------------
 
-// Does not work - but no longer used anyway
 time_t STT::UTCtoLocal(time_t utcTime) const
 {
-  //TODO: Is there a better way to do this?.
-  time_t utc = utcTime - GPS_UTC_offset 
-             + secs_Between_1Jan1970_6Jan1980;
-
-   struct tm* utc_tm = gmtime( &utc );
-   utc_tm->tm_isdst = -1;
-
-   if ( (daylight_savings & 0x8000) >> 15 )
-     utc_tm->tm_hour += 1; // opposite because of -
-     
-   return ( 2 * utc ) - mktime( utc_tm );
+  //TODO
+  return 0;
 }
 
 
@@ -357,7 +347,9 @@ VCT::VCT(const u8* data) : PSIPTable(data)
       {
         ExtendedChannelNameDescriptor* ecnd = dynamic_cast<ExtendedChannelNameDescriptor*>(d);
         channels[i].SetLongName( ecnd->GetLongChannelName().c_str() );
-      }   
+      }
+      else
+        dprint(L_ERR, "Unhandled VCT descriptor 0x%02X",  d->GetTag());  
     }
     descriptors.clear();
     

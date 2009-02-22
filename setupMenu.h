@@ -26,7 +26,6 @@
 class cATSCSetupMenu : public cMenuSetupPage 
 {
 private:
-  int  newTimeZone;
   //int  newSetTime;
   
 protected:

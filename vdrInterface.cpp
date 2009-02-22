@@ -49,7 +49,7 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 	  	const Event* e = eit.GetEvent(i);
 
 	    // Check if event already exit
-	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id, GPStoSystem(e->start_time) );
+	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id, GPStoLocal(e->start_time) );
 	    if (!pEvent)
 	    {
 	      dprint(L_VDR, "New event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
@@ -171,10 +171,17 @@ void VDRInterface::UpdateSTT(const u8* data)
 //----------------------------------------------------------------------------
 #define	 secs_Between_1Jan1970_6Jan1980	 315982800
 
-time_t VDRInterface::GPStoSystem(time_t gps) const
+time_t VDRInterface::GPStoLocal(time_t gps) const
 {
-  time_t time = gps + (config.timeZone * 60*60) + secs_Between_1Jan1970_6Jan1980;
-	return (time - (time % 60)); // Round down to the nearest minute
+  gps += secs_Between_1Jan1970_6Jan1980;
+  
+  struct tm tm_r;
+  tm tm = *localtime_r(&gps, &tm_r);
+  tm.tm_isdst = -1;
+  time_t localTime = mktime(&tm);
+  localTime -= localTime % 60; // Round down to the nearest minute
+  
+  return localTime;
 }
 
 //----------------------------------------------------------------------------
@@ -197,10 +204,8 @@ void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) 
   
   if (setId)
     vdrEvent->SetEventID(event->event_id);
-  
-  //vdrEvent->SetStartTime( stt->UTCtoLocal( event.start_time ) );
 
-  vdrEvent->SetStartTime( GPStoSystem(event->start_time) );
+  vdrEvent->SetStartTime( GPStoLocal(event->start_time) );
   
   vdrEvent->SetDuration(event->length_in_seconds);
   vdrEvent->SetTitle( event->TitleText() );

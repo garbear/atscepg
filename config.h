@@ -23,7 +23,6 @@
 
 struct sATSCConfig 
 {
-  int timeZone;
   //int setTime;
 };
 

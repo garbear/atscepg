@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-static const char* VERSION        = "0.2.0";
+static const char* VERSION        = "0.2.0-hg";
 static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char* MAINMENUENTRY  =  NULL; 
 
@@ -84,7 +84,6 @@ cPluginAtscepg::cPluginAtscepg(void)
   lastChannel = -1;
   modATSC = 0;
 
-  config.timeZone = -5;
   //config.setTime  = 0;
 }
 
@@ -199,11 +198,11 @@ cMenuSetupPage *cPluginAtscepg::SetupMenu(void)
 bool cPluginAtscepg::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  if      (!strcasecmp(Name, "timeZone"))   config.timeZone  = atoi(Value);
-  //else if (!strcasecmp(Name, "setTime"))  config.setTime = atoi(Value);
-  else return false;
+  //if (!strcasecmp(Name, "setTime"))  config.setTime = atoi(Value);
+  //else return false;
   
-  return true;
+  //return true;
+  return false;
 }
 
 

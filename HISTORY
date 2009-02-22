@@ -62,4 +62,14 @@ VDR Plugin 'atscepg' Revision History
 - Now calling cPlugin::ConfigDirectory() in thread-safe way.
 - Updated license information.
 - Added missing virtual to cATSCScanner's destructor
-  
+
+
+2009-??-??: Development Version
+
+- Added support for long channel names.
+- Added channel numbering script.
+- VCT descriptors no longer parsed multiple times.
+- Proper conversion to local time.
+
+
+

@@ -47,7 +47,7 @@ private:
   void ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) const;
 	cEvent* CreateVDREvent(const Event* event) const;
   void DisplayChannelInfo(const Channel* ch, u8 table_id) const;
-	time_t GPStoSystem(time_t gps) const;
+	time_t GPStoLocal(time_t gps) const;
 
 	u16 currentTID;	
 	STT* stt;

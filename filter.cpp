@@ -55,6 +55,8 @@ cATSCFilter::cATSCFilter()
   // Set(0x1FFB, 0xCA); // RRT
   // Set(0x1FFB, 0xCD); // SST
 
+  // Set(0x1FFB, 0xCE); // DET
+  
   // Set(0x1FFB, 0xD3); // DCCT
   // Set(0x1FFB, 0xD4); // DCCSCT
 }
@@ -181,13 +183,6 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       gotRRT = true; 
       break; 
       
-    case 0xCD: // STT: System Time Table  
-      if (now - lastScanSTT <= STT_SCAN_DELAY) return;
-      dprint(L_MSG, "Received STT.");
-      //vdrInterface.UpdateSTT(Data);  
-      lastScanSTT = time(NULL);
-      break;
-      
     case 0xCB: // EIT: Event Information Table
       ProcessEIT(Data, Pid);
       break;
@@ -196,6 +191,17 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       ProcessETT(Data);
       break; 
       
+    case 0xCD: // STT: System Time Table  
+      if (now - lastScanSTT <= STT_SCAN_DELAY) return;
+      dprint(L_MSG, "Received STT.");
+      //vdrInterface.UpdateSTT(Data);
+      lastScanSTT = time(NULL);
+      break;
+      
+    case 0xCE: // DET
+      dprint(L_ERR, "Received DET: Not yet implemented.");
+      break;
+             
     case 0xD3: // DCC 
       dprint(L_DBG, "Received DCC: Not yet implemented.");
       break;
@@ -261,6 +267,8 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
         Add(t->pid, t->tid);
       }
     }
+    //else
+    // dprint(L_ERR, "MGT: Unhandled table id 0x%02X", t->tid);
   }
 }
 

@@ -58,9 +58,9 @@ void dprint(uint8_t type, const char* msg, ...);
 
 
 
-inline u16 get_u16(const u8* d) { return (d[0] << 8) | d[1]; }
-inline u32 get_u24(const u8* d) { return (d[0] << 16) | (d[1] << 8) | d[2]; }
-inline u32 get_u32(const u8* d) { return (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | d[3]; } 
+static inline u16 get_u16(const u8* d) { return (d[0] << 8) | d[1]; }
+static inline u32 get_u24(const u8* d) { return (d[0] << 16) | (d[1] << 8) | d[2]; }
+static inline u32 get_u32(const u8* d) { return (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | d[3]; } 
 
 
 #endif //__ATSCTOOLS_H

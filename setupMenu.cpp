@@ -29,10 +29,8 @@
 
 cATSCSetupMenu::cATSCSetupMenu(void)
 {
-  newTimeZone  = config.timeZone;
   //newSetTime = config.setTime;
    
-  Add(new cMenuEditIntItem("Time Zone",    &newTimeZone, -12, 13));  
   //Add(new cMenuEditBoolItem("Set system time", &newSetTime, "No", "Yes"));
   
   scan = new cOsdItem("Channel Scan...");
@@ -44,7 +42,6 @@ cATSCSetupMenu::cATSCSetupMenu(void)
 
 void cATSCSetupMenu::Store(void)
 {
-  SetupStore("timeZone", config.timeZone  = newTimeZone);
   //SetupStore("setTime",  config.setTime   = newSetTime);
 }
 

@@ -81,12 +81,15 @@ string Uncompressed(const u8* buf, u8 len, u8 mode)
     	str += c;
     }
   } 
-  else if (0x40 <= mode && mode <= 0x41)
+  else if (0x40 == mode || mode == 0x41)
     str = "TODO Tawain Characters";
   else if (mode == 0x48)
     str = "TODO South Korean Characters";
-  else
+  else {
+    dprint(L_ERR, "Huffman: unknown encoding mode 0x%02X", mode);
     str = "unknown character encoding mode";
+  }
+  
   return str;
 } 
 
