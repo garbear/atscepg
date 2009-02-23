@@ -174,12 +174,11 @@ void VDRInterface::UpdateSTT(const u8* data)
 time_t VDRInterface::GPStoLocal(time_t gps) const
 {
   gps += secs_Between_1Jan1970_6Jan1980;
-  
-  struct tm tm_r;
-  tm tm = *localtime_r(&gps, &tm_r);
-  tm.tm_isdst = -1;
-  time_t localTime = mktime(&tm);
-  localTime -= localTime % 60; // Round down to the nearest minute
+
+  struct tm* local = localtime(&gps);
+  local->tm_isdst = -1;
+  time_t localTime = timegm(local);
+  localTime -= localTime % 60;
   
   return localTime;
 }
@@ -212,14 +211,8 @@ void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) 
   vdrEvent->SetVersion(event->version_number);
   vdrEvent->SetTableID(event->table_id);
   
-  //vdrEvent->SetShortText("");
-  
   if (event->ETM_location == 0x00) // There is no description for this event
     vdrEvent->SetDescription("No description provided for this event.");
-  //else
-  //  vdrEvent->SetDescription("");
-    
-  // vdrEvent->SetRunningStatus(0); 
 }
 
 
