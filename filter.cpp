@@ -19,17 +19,14 @@
 
 #include <vdr/plugin.h>
 #include <vdr/filter.h>
-#include  <vdr/device.h>
+#include <vdr/device.h>
+
+#include <libsi/section.h>
+#include <libsi/descriptor.h>
 
 #include "filter.h"
 #include "tables.h"
 #include "tools.h"
-
-
-///////////////////////////////////////////////////////////////////////////////
-
-
-cATSCFilter* cATSCFilter::instance = NULL;
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,11 +44,9 @@ cATSCFilter::cATSCFilter()
   lastScanSTT = 0;
    
   attachedDevice = NULL;
-  currentChannel = NULL;
   
   Set(0x1FFB, 0xC7); // MGT
-  Set(0x1FFB, 0xC8); // VCT-T
-  Set(0x1FFB, 0xC9); // VCT-C
+
   // Set(0x1FFB, 0xCA); // RRT
   // Set(0x1FFB, 0xCD); // SST
 
@@ -72,35 +67,14 @@ cATSCFilter::~cATSCFilter()
 }
 
 
-//-----------------------------------------------------------------------------
-
-cATSCFilter* cATSCFilter::Instance(void)
-{
-  if (!instance)
-    instance = new cATSCFilter();
-    
-  return instance;
-}
-
-
-//-----------------------------------------------------------------------------
-
-void cATSCFilter::Destroy(void)
-{
-  delete instance;
-  instance = NULL;
-  dprint(L_DBGV, "ATSCFilter Destroyed.");
-}
-
-
 //----------------------------------------------------------------------------
 
-void cATSCFilter::Attach(cDevice* device, const cChannel* channel)
+void cATSCFilter::Attach(cDevice* device)
 {
   if (!attachedDevice) 
   {
     attachedDevice = device;
-    currentChannel = channel;
+
     if (attachedDevice) 
     {
       attachedDevice->AttachFilter(this);
@@ -116,7 +90,6 @@ void cATSCFilter::Detach(void)
 {
   if (attachedDevice) 
   {
-    currentChannel = NULL;
     attachedDevice->Detach(this);
     attachedDevice = NULL;
     dprint(L_DBGV, "ATSCFilter Detached.");
@@ -142,6 +115,10 @@ void cATSCFilter::SetStatus(bool On)
     ettEIDs.clear();
     ettPids.clear();
     
+    // Add(0x0000, 0x00); // PAT
+    Add(0x1FFB, 0xC8); // VCT-T
+    Add(0x1FFB, 0xC9); // VCT-C
+      
     if (mgt) {
       delete mgt;
       mgt = NULL;
@@ -164,6 +141,16 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
   
   switch (Tid)
   {
+    case 0x00: // PAT
+      if (ProcessPAT(Data))
+        Del(0x0000, 0x00);
+    break;
+    
+    case 0x02: // PMT
+      if (ProcessPMT(Data))
+        Del(Pid, 0x02);
+    break;
+    
     case 0xC7: // MGT: Master Guide Table
       if (!gotVCT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
       ProcessMGT(Data);
@@ -175,6 +162,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       if (gotVCT) return; 
       ProcessVCT(Data);
       gotVCT = true;
+      Del(0x1FFB, Tid);
     break; 
       
     case 0xCA: // RRT: Rating Region Table 
@@ -215,12 +203,54 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       dprint(L_DBG, "Unknown TID: 0x%02X", Tid);
     break;   
   }
-  
 }
 
 
 //----------------------------------------------------------------------------
 
+bool cATSCFilter::ProcessPAT(const uint8_t* data)
+{
+  SI::PAT pat(data, false);
+  if (!pat.CheckCRCAndParse())
+    return false;
+
+  dprint(L_DBG, "Received PAT.");
+  SI::PAT::Association assoc;
+  for (SI::Loop::Iterator it; pat.associationLoop.getNext(assoc, it); ) 
+  {
+    dprint(L_DBG, "PAT: Found PMT (pid: %d, sid: %d)", assoc.getPid(), assoc.getServiceId());
+    Add(assoc.getPid(), 0x02);
+  }
+  
+  return true;
+}
+
+  
+//----------------------------------------------------------------------------
+
+bool cATSCFilter::ProcessPMT(const uint8_t* data)
+{
+  SI::PMT pmt(data, false);
+  if (!pmt.CheckCRCAndParse())
+    return false;
+  
+  SI::PMT::Stream stream;
+  for (SI::Loop::Iterator it; pmt.streamLoop.getNext(stream, it); ) 
+  {
+    SI::Descriptor *d;
+    for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); )
+    {
+      dprint(L_DBG, "DESC: PID=%04X  ST=%02X  TAG=%02X", stream.getPid(), stream.getStreamType(), d->getDescriptorTag());
+      delete d;
+    }
+  } 
+
+  return true;
+}
+
+
+//----------------------------------------------------------------------------
+  
 void cATSCFilter::ProcessMGT(const uint8_t* data)
 {
   // Do we have a newer version?
@@ -249,31 +279,39 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
   for (u8 k = 0; k < mgt->NumberOfTables(); k++)
   {
     const Table* t = mgt->GetTable(k);
-        
-    if (t->tid == 0xCC) // ETT 
-    { 
-      if (t->table_type == 0x0004) { // Channel ETT
-        dprint(L_MGT, "MGT: Found channel ETT PID");
-        // Usually provides a short description, not very useful.
-      }  
-      else { // Event ETT 
-        dprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
-        ettPids.push_back(t->pid); // Save these for after we have the EITs
-      }  
-    }  
-    else if (t->tid == 0xCB) // EIT
-    {
-      dprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
+    
+    switch (t->tid)
+    {   
+      case 0xCC: // ETT 
+        if (t->table_type == 0x0004) { // Channel ETT
+          dprint(L_MGT, "MGT: Found channel ETT PID");
+          // Usually provides a short description, not very useful.
+        }  
+        else { // Event ETT 
+          dprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
+          ettPids.push_back(t->pid); // Save these for after we have the EITs
+        }
+      break; 
+
+      case 0xCB: // EIT
+        dprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
           
-      for (size_t i = 0; i < channelSIDs.size(); i++)
-      {
-        u32 v = (((u32) channelSIDs[i]) << 16) | t->pid;
-        eitPids.push_back(v);
-        Add(t->pid, t->tid);
-      }
+        for (size_t i = 0; i < channelSIDs.size(); i++)
+        {
+          u32 v = (((u32) channelSIDs[i]) << 16) | t->pid;
+          eitPids.push_back(v);
+          Add(t->pid, t->tid);
+        }
+      break;
+      
+      case 0xCA: // RRT
+      case 0xC8: // VCT
+        // Always the same pid...
+      break;
+      
+      default:
+        dprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
     }
-    else
-      dprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
   }
 }
 
@@ -282,7 +320,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
 
 void cATSCFilter::ProcessVCT(const uint8_t* data)
 {
-  dprint(L_VCT, "Received VCT.");
+  dprint(L_VCT|L_MSG, "Received VCT.");
 
   VCT vct(data);
   vdrInterface.AddChannels(vct);
@@ -385,9 +423,9 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
 
 //----------------------------------------------------------------------------
 
-int cATSCFilter::GetMGTVersion(void) const
+int cATSCFilter::GetMGTVersion(void)
 {
-  std::map<int,uint8_t>::const_iterator itr = MGTVersions.find( currentChannel->Tid() );
+  std::map<int,uint8_t>::const_iterator itr = MGTVersions.find(Transponder());
   if (itr == MGTVersions.end()) // Key not found
     return -1;
 
@@ -399,7 +437,7 @@ int cATSCFilter::GetMGTVersion(void) const
 
 void cATSCFilter::SetMGTVersion(uint8_t version)
 {
-  MGTVersions[currentChannel->Tid()] = version;
+  MGTVersions[Transponder()] = version;
 }
 
 

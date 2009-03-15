@@ -36,12 +36,10 @@
 class cATSCFilter : public cFilter
 {  
 public:
-  static cATSCFilter* Instance(void);
-  static void Destroy(void);
-
-  static int Frequency(void) { return instance->currentChannel->Frequency(); }
+  cATSCFilter(void);
+  virtual ~cATSCFilter();
   
-  void Attach(cDevice* Device, const cChannel* channel);
+  void Attach(cDevice* Device);
   void Detach(void);
   
 protected:
@@ -49,22 +47,20 @@ protected:
   virtual void SetStatus(bool On);
   
 private:
-  cATSCFilter(void);
- ~cATSCFilter(void);
-
+  bool ProcessPAT(const uint8_t* data);
+  bool ProcessPMT(const uint8_t* data);
+  
   void ProcessMGT(const uint8_t* data);
   void ProcessVCT(const uint8_t* data);
   void ProcessEIT(const uint8_t* data, uint16_t Pid);
   void ProcessETT(const uint8_t* data);
   
-  int GetMGTVersion(void) const;
+  int GetMGTVersion(void);
   void SetMGTVersion(uint8_t version);
   
   std::map<int, uint8_t> MGTVersions;
   
-  static cATSCFilter* instance;
   cDevice* attachedDevice;
-  const cChannel* currentChannel;
 
   MGT* mgt;
 
@@ -81,7 +77,6 @@ private:
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
-
 };
 
 

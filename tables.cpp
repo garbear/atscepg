@@ -363,9 +363,12 @@ VCT::VCT(const u8* data) : PSIPTable(data)
               }
             break;
             
-            case 0x05: // ISO/IEC 13818-1 private sections
-            case 0x06: // PES packets containing A/90 streaming, synchronized data
+            case 0x05: // Software download data service (A/97)
             case 0x0B: // DSM-CC sections containing A/90 asynchronous data
+              // Some PBS stations use UpdateTV based on ATSC A/97 (updatelogic.com)
+            break;  
+            
+            case 0x06: // PES packets containing A/90 streaming, synchronized data
             case 0x0D: // DSM-CC addressable sections per A/90
             case 0x14: // DSM-CC sections containing non-streaming, synchronized data per A/90
             case 0x95: // Sections conveying A/90 Data Service Table, Network Resources

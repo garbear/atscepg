@@ -43,6 +43,7 @@ class cPluginAtscepg : public cPlugin, cStatus
 private:
   int lastChannel;
   int modATSC;
+  cATSCFilter* filter;
   
 public:
   cPluginAtscepg(void);
@@ -67,7 +68,7 @@ public:
   
 protected:
   virtual void ChannelSwitch(const cDevice* Device, int ChannelNumber);
-  };
+};
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -79,11 +80,11 @@ cPluginAtscepg::cPluginAtscepg(void)
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
-  SetLogType(L_DEFAULT | L_MGT | L_DBG);
+  SetLogType(L_DEFAULT | L_DBG);
 
   lastChannel = -1;
   modATSC = 0;
-
+  filter = NULL;
   //config.setTime  = 0;
 }
 
@@ -93,7 +94,7 @@ cPluginAtscepg::cPluginAtscepg(void)
 cPluginAtscepg::~cPluginAtscepg()
 {
   // Clean up after yourself!
-  cATSCFilter::Destroy();
+  delete filter;
 }
 
 
@@ -137,6 +138,7 @@ bool cPluginAtscepg::Initialize(void)
 bool cPluginAtscepg::Start(void)
 {
   // Start any background activities the plugin shall perform.
+  filter = new cATSCFilter();
   return true;
 }
 
@@ -244,7 +246,7 @@ void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
       if (c->Modulation() == modATSC && ChannelNumber != lastChannel)
       {
         lastChannel = ChannelNumber;
-        cATSCFilter::Instance()->Attach( (cDevice*) Device, c);
+        filter->Attach((cDevice*) Device);
         dprint(L_MSG, "ATSC (8-VSB) Channel Detected (#%d)", ChannelNumber); 
       }  
     }
@@ -252,7 +254,7 @@ void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
   }
   else
   {
-    cATSCFilter::Instance()->Detach();
+    filter->Detach();
   }
 }
  
