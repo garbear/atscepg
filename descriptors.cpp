@@ -326,10 +326,10 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
 
 //////////////////////////////////////////////////////////////////////////////
 
-// UNTESTED
-ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data): Descriptor(data)
+
+ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data) : Descriptor(data)
 {
-  MultipleStringStructure long_channel_name( data + 3 );
+  MultipleStringStructure long_channel_name( data + 2 );
   
   // Assume we get a single string
   long_channel_name_text = long_channel_name.GetString(0);
