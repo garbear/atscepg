@@ -38,13 +38,13 @@ sATSCConfig config;
 //////////////////////////////////////////////////////////////////////////////
 
 
-class cPluginAtscepg : public cPlugin, cStatus 
+class cPluginAtscepg : public cPlugin
 {
 private:
   int lastChannel;
   int modATSC;
-  cATSCFilter* filter;
-  
+  cATSCFilter* filters[MAXDEVICES];
+
 public:
   cPluginAtscepg(void);
   virtual ~cPluginAtscepg();
@@ -65,9 +65,6 @@ public:
   virtual bool Service(const char* Id, void* Data = NULL);
   virtual const char** SVDRPHelpPages(void);
   virtual cString SVDRPCommand(const char* Command, const char* Option, int& ReplyCode);
-  
-protected:
-  virtual void ChannelSwitch(const cDevice* Device, int ChannelNumber);
 };
 
 
@@ -84,8 +81,10 @@ cPluginAtscepg::cPluginAtscepg(void)
 
   lastChannel = -1;
   modATSC = 0;
-  filter = NULL;
   //config.setTime  = 0;
+  
+  for (int i=0; i<MAXDEVICES; i++)
+    filters[i] = NULL;
 }
 
 
@@ -94,7 +93,8 @@ cPluginAtscepg::cPluginAtscepg(void)
 cPluginAtscepg::~cPluginAtscepg()
 {
   // Clean up after yourself!
-  delete filter;
+  for (int i=0; i<MAXDEVICES; i++)
+    delete filters[i];
 }
 
 
@@ -138,7 +138,22 @@ bool cPluginAtscepg::Initialize(void)
 bool cPluginAtscepg::Start(void)
 {
   // Start any background activities the plugin shall perform.
-  filter = new cATSCFilter();
+  
+  int numDev = 0;
+  int n = cDevice::NumDevices();
+  for (int i=0; i<n; i++) 
+  {
+    cDevice* d = cDevice::GetDevice(i);
+    if (d && d->ProvidesSource(cSource::stTerr)) // This could also mean DVB-T...
+    {
+      numDev++;
+      filters[i] = new cATSCFilter(numDev);
+      filters[i]->Attach(d);
+    }
+  }
+  
+  dprint(L_MSG, "Found %d ATSC device(s)", numDev);
+  
   return true;
 }
 
@@ -234,30 +249,6 @@ cString cPluginAtscepg::SVDRPCommand(const char *Command, const char *Option, in
   return NULL;
 }
 
-
-//----------------------------------------------------------------------------
-
-void cPluginAtscepg::ChannelSwitch(const cDevice* Device, int ChannelNumber)
-{ 
-  if (ChannelNumber)
-  {
-    cChannel* c = Channels.GetByNumber(ChannelNumber); 
-    if (c) {
-      if (c->Modulation() == modATSC && ChannelNumber != lastChannel)
-      {
-        lastChannel = ChannelNumber;
-        filter->Attach((cDevice*) Device);
-        dprint(L_MSG, "ATSC (8-VSB) Channel Detected (#%d)", ChannelNumber); 
-      }  
-    }
-    
-  }
-  else
-  {
-    filter->Detach();
-  }
-}
- 
   
 //////////////////////////////////////////////////////////////////////////////
 

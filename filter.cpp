@@ -17,6 +17,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <stdarg.h>
+
 #include <vdr/plugin.h>
 #include <vdr/filter.h>
 #include <vdr/device.h>
@@ -32,9 +34,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 
-cATSCFilter::cATSCFilter()
+cATSCFilter::cATSCFilter(int num)
 {
-  dprint(L_DBGV, "ATSCFilter Created.");
+  fNum = num;
+  dfprint(L_DBGV, "(Filter %d) Created.");
   mgt = NULL;
 
   gotVCT = false;
@@ -78,7 +81,7 @@ void cATSCFilter::Attach(cDevice* device)
     if (attachedDevice) 
     {
       attachedDevice->AttachFilter(this);
-      dprint(L_DBGV, "ATSCFilter Attached.");
+      dfprint(L_DBGV, "Attached.");
     }
   }
   
@@ -92,7 +95,7 @@ void cATSCFilter::Detach(void)
   {
     attachedDevice->Detach(this);
     attachedDevice = NULL;
-    dprint(L_DBGV, "ATSCFilter Detached.");
+    dfprint(L_DBGV, "Detached.");
   }
 }
   
@@ -102,7 +105,10 @@ void cATSCFilter::SetStatus(bool On)
 { 
   if (On) 
   {
-    dprint(L_DBG, "Resetting ATSC Filter");
+    dfprint(L_DBG, "Resetting");
+    if (const cChannel* c = Channel())
+      dfprint(L_MSG, "Switched to channel %d", c->Number());
+      
     gotVCT = false;
     gotRRT = false;
     
@@ -167,7 +173,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       
     case 0xCA: // RRT: Rating Region Table 
       if (gotRRT) return;
-      dprint(L_DBG, "Received RRT: Not yet implemented.");
+      dfprint(L_DBG, "Received RRT: Not yet implemented.");
       //RRT rrt(Data);
       gotRRT = true; 
     break; 
@@ -182,25 +188,25 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
-      dprint(L_MSG, "Received STT.");
+      dfprint(L_MSG, "Received STT.");
       //vdrInterface.UpdateSTT(Data);
       lastScanSTT = time(NULL);
     break;
       
     case 0xCE: // DET
-      dprint(L_DBG, "Received DET: Not yet implemented.");
+      dfprint(L_DBG, "Received DET: Not yet implemented.");
     break;
              
     case 0xD3: // DCC 
-      dprint(L_DBG, "Received DCC: Not yet implemented.");
+      dfprint(L_DBG, "Received DCC: Not yet implemented.");
     break;
       
     case 0xD4: // DCCSCT
-      dprint(L_DBG, "Received DCCSCT: Not yet implemented.");
+      dfprint(L_DBG, "Received DCCSCT: Not yet implemented.");
     break;
       
     default:
-      dprint(L_DBG, "Unknown TID: 0x%02X", Tid);
+      dfprint(L_DBG, "Unknown TID: 0x%02X", Tid);
     break;   
   }
 }
@@ -214,11 +220,11 @@ bool cATSCFilter::ProcessPAT(const uint8_t* data)
   if (!pat.CheckCRCAndParse())
     return false;
 
-  dprint(L_DBG, "Received PAT.");
+  dfprint(L_DBG, "Received PAT.");
   SI::PAT::Association assoc;
   for (SI::Loop::Iterator it; pat.associationLoop.getNext(assoc, it); ) 
   {
-    dprint(L_DBG, "PAT: Found PMT (pid: %d, sid: %d)", assoc.getPid(), assoc.getServiceId());
+    dfprint(L_DBG, "PAT: Found PMT (pid: %d, sid: %d)", assoc.getPid(), assoc.getServiceId());
     Add(assoc.getPid(), 0x02);
   }
   
@@ -240,7 +246,7 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data)
     SI::Descriptor *d;
     for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); )
     {
-      dprint(L_DBG, "DESC: PID=%04X  ST=%02X  TAG=%02X", stream.getPid(), stream.getStreamType(), d->getDescriptorTag());
+      dfprint(L_DBG, "DESC: PID=%04X  ST=%02X  TAG=%02X", stream.getPid(), stream.getStreamType(), d->getDescriptorTag());
       delete d;
     }
   } 
@@ -258,7 +264,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
 
   if ( ((int)newVersion) != GetMGTVersion())
   {
-    dprint(L_MSG|L_MGT, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
+    dfprint(L_MSG|L_MGT, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
     if (!mgt)
       mgt = new MGT(data);
     else
@@ -268,7 +274,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
   }
   else 
   { 
-    dprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newVersion); 
+    dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newVersion); 
     return;
   }
     
@@ -284,17 +290,17 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
     {   
       case 0xCC: // ETT 
         if (t->table_type == 0x0004) { // Channel ETT
-          dprint(L_MGT, "MGT: Found channel ETT PID");
+          dfprint(L_MGT, "MGT: Found channel ETT PID");
           // Usually provides a short description, not very useful.
         }  
         else { // Event ETT 
-          dprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
+          dfprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
           ettPids.push_back(t->pid); // Save these for after we have the EITs
         }
       break; 
 
       case 0xCB: // EIT
-        dprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
+        dfprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
           
         for (size_t i = 0; i < channelSIDs.size(); i++)
         {
@@ -310,7 +316,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
       break;
       
       default:
-        dprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
+        dfprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
     }
   }
 }
@@ -320,7 +326,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
 
 void cATSCFilter::ProcessVCT(const uint8_t* data)
 {
-  dprint(L_VCT|L_MSG, "Received VCT.");
+  dfprint(L_VCT|L_MSG, "Received VCT.");
 
   VCT vct(data);
   vdrInterface.AddChannels(vct);
@@ -351,13 +357,13 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
         found = true;
     }
     if (found)
-      dprint(L_EIT, "Received EIT (SID: %d PID: %d) [Already seen]", sid, Pid );
+      dfprint(L_EIT, "Received EIT (SID: %d PID: %d) [Already seen]", sid, Pid );
     else  
-      dprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: %d)", sid, Pid );
+      dfprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: %d)", sid, Pid );
   }  
   else // Add events to schedule 
   {
-    dprint(L_EIT, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
+    dfprint(L_EIT, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
     eitPids.erase(itr);
     Del(Pid, 0xCB);
       
@@ -375,7 +381,7 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
     
   if (eitPids.size() == 0) 
   {
-    dprint(L_MSG|L_EIT, "Received all EITs.");
+    dfprint(L_MSG|L_EIT, "Received all EITs.");
 
     // Now start looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -396,11 +402,11 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
     
   if (itr == ettEIDs.end()) 
   {
-    dprint(L_ETT, "Unexpected ETT (EID: %d)", eid);
+    dfprint(L_ETT, "Unexpected ETT (EID: %d)", eid);
   }
   else
   {
-    dprint(L_ETT, "Received ETT (EID: %d)", eid);
+    dfprint(L_ETT, "Received ETT (EID: %d)", eid);
     ettEIDs.erase(itr);
     // We cannot Del(Pid, Tid) because we do not know how many ETTs 
     // we will get per PID. Or maybe there is a way to know this...
@@ -410,8 +416,8 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
     
   if (ettEIDs.size() == 0) 
   {
-    dprint(L_MSG|L_ETT, "Received all ETTs.");
-    dprint(L_MSG, "Got all event information for this transport stream.");
+    dfprint(L_MSG|L_ETT, "Received all ETTs.");
+    dfprint(L_MSG, "Got all event information for this transport stream.");
       
     // Stop looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -440,6 +446,23 @@ void cATSCFilter::SetMGTVersion(uint8_t version)
   MGTVersions[Transponder()] = version;
 }
 
+
+//----------------------------------------------------------------------------
+#ifdef AE_DEBUG
+
+void cATSCFilter::dfprint(uint16_t type, const char* msg, ...)
+{
+  char* output = NULL;
+  va_list ap;
+  va_start(ap, msg);
+  vasprintf(&output, msg, ap);
+  va_end(ap);
+  
+  dprint(type, "(Filter %d) %s", fNum, output);
+  free(output);
+}
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 

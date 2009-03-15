@@ -36,7 +36,7 @@
 class cATSCFilter : public cFilter
 {  
 public:
-  cATSCFilter(void);
+  cATSCFilter(int num);
   virtual ~cATSCFilter();
   
   void Attach(cDevice* Device);
@@ -57,8 +57,8 @@ private:
   
   int GetMGTVersion(void);
   void SetMGTVersion(uint8_t version);
-  
-  std::map<int, uint8_t> MGTVersions;
+
+  std::map<int, uint8_t> MGTVersions; // Should be shared between instances?
   
   cDevice* attachedDevice;
 
@@ -69,7 +69,8 @@ private:
    
   bool gotVCT;
   bool gotRRT;
-   
+  int fNum;
+  
   VDRInterface vdrInterface;
   
   std::vector<u16> channelSIDs;
@@ -77,6 +78,12 @@ private:
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
+  
+#ifdef AE_DEBUG
+  void dfprint(uint16_t type, const char* msg, ...);
+#else
+  void dfprint(uint16_t type, const char* msg, ...) { }
+#endif
 };
 
 
