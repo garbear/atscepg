@@ -66,6 +66,8 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
           dec = "";
       }
       
+      //if (mode == 0x0F)
+      //  dprint(L_ERR, "0x0F: %s", dec.c_str());
       str += dec; // Add decompressed segment
        
     }
@@ -349,8 +351,12 @@ ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descripto
   {
     streams[i].stream_type = d[0];
     streams[i].elementary_PID = ((d[1] & 0x1F) << 8) | d[2];
-    streams[i].ISO_639_language_code = get_u24(d+3);  
-
+    
+    streams[i].ISO_639_language_code[0] = d[3];  
+    streams[i].ISO_639_language_code[1] = d[4];
+    streams[i].ISO_639_language_code[2] = d[5];
+    streams[i].ISO_639_language_code[3] = 0;
+    
     d += 6;
   }
 }

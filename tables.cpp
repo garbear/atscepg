@@ -19,6 +19,7 @@
 
 #include <time.h>
 #include <string>
+#include <string.h>
 
 #include <libsi/util.h>
 
@@ -287,17 +288,20 @@ VCT::VCT(const u8* data) : PSIPTable(data)
 {
   transport_stream_id = table_id_extension;
   numberOfChannels    = data[9];
-  channels = new Channel[numberOfChannels];
-  
+  channels = new AtscChannel*[numberOfChannels];
+
   const uchar* d = data + 10;
   for (u8 i = 0; i < numberOfChannels; i++)
   { 
+    channels[i] = new AtscChannel();
+    
     //TODO: Proper conversion from UTF-16
     std::string short_name = "";
     for (int k=0; k<7; k++) short_name += (d[2*k] << 8) | d[2*k+1]; 
+    channels[i]->SetShortName( short_name.c_str() );
     
-    channels[i].majorChannelNumber = (((d[14] & 0x0F) << 8) | (d[15] & 0xFC)) >> 2;
-    channels[i].minorChannelNumber = ((d[15] & 0x03) << 8) | d[16];
+    channels[i]->SetMajorNumber( (((d[14] & 0x0F) << 8) | (d[15] & 0xFC)) >> 2 );
+    channels[i]->SetMinorNumber(  ((d[15] & 0x03) << 8) | d[16] );
     /*
     u8  modulation_mode      = d[17];
     u32 carrier_frequency    = get_u32( d+18 );
@@ -312,20 +316,25 @@ VCT::VCT(const u8* data) : PSIPTable(data)
     u1  path_select = (d[26] & 0x08) >> 3;
     u1  out_of_band = (d[26] & 0x04) >> 2;
     u16 one_part_number = (major_channel_number & 0x00F) << 10 + minor_channel_number;
-    //TODO: one_part_number only appies under certain conditions...
-    
-            
+    //XXX: one_part_number only appies under certain conditions...
+         
     u1  hide_guide           = (d[26] & 0x02) >> 1;    
     u8  service_type         = (d[27] & 0x3F);
     */
-    channels[i].transport_stream_id = transport_stream_id;
-    channels[i].source_id           = get_u16( d+28 );
-    channels[i].SetShortName( short_name.c_str() );
+    
+    channels[i]->SetId(transport_stream_id, get_u16(d+28));
      
     u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
-    
     AddDescriptors(d+32, descriptors_length);
     
+    int Vpid = 0;
+    int Vtype = 0;
+    int Ppid = 0;
+  
+    int Dpids[MAXDPIDS + 1] = { 0 };
+    char DLangs[MAXDPIDS][MAXLANGCODE2] = { "" };
+    int NumDpids = 0;  
+  
     //TODO: More in depth descriptor handling
     for (size_t j=0; j<descriptors.size(); j++)
     {
@@ -333,25 +342,43 @@ VCT::VCT(const u8* data) : PSIPTable(data)
       if (d->GetTag() == 0xA1) // Service Location Descriptor
       {
         ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(d);
-        channels[i].PCR_PID = sld->GetPCR_PID();
-        
+
         for (u8 k = 0; k < sld->NumberOfStreams(); k++)
         { 
           const Stream* s = sld->GetStream(k);
-          if      (s->stream_type == 0x02) channels[i].vPID = s->elementary_PID;
-          else if (s->stream_type == 0x81) channels[i].aPID = s->elementary_PID;
-          else    dprint(L_ERR, "Found unknown stream type 0x%02X", s->stream_type);
+          switch(s->stream_type)
+          {
+            case 0x02:
+            case 0x1B:
+              Vpid = s->elementary_PID;
+              Ppid = sld->GetPCR_PID();
+              Vtype = s->stream_type;
+            break;
+            
+            case 0x81:
+              if (NumDpids < MAXDPIDS) {
+                Dpids[NumDpids] = s->elementary_PID;
+                strncpy(DLangs[NumDpids], s->ISO_639_language_code, 3);
+                NumDpids++;
+              }
+            break;
+            
+            default:
+              dprint(L_ERR, "Found unknown stream type 0x%02X", s->stream_type);
+          }
         }
       } 
       else if (d->GetTag() == 0xA0) // Extended Channel Name Descriptor
       {
         ExtendedChannelNameDescriptor* ecnd = dynamic_cast<ExtendedChannelNameDescriptor*>(d);
-        channels[i].SetLongName( ecnd->GetLongChannelName().c_str() );
+        channels[i]->SetLongName( ecnd->GetLongChannelName().c_str() );
       }
       else
         dprint(L_ERR, "Unhandled VCT descriptor 0x%02X",  d->GetTag());  
     }
     descriptors.clear();
+    
+    channels[i]->SetPids(Vpid, Ppid, Vtype, Dpids, DLangs);     
     
     d += 32 + descriptors_length;
   }
@@ -363,6 +390,17 @@ VCT::VCT(const u8* data) : PSIPTable(data)
      additional_descriptor()
   }
   */     
+}
+
+
+//----------------------------------------------------------------------------
+
+VCT::~VCT()
+{ 
+  for (int i=0; i<numberOfChannels; i++)
+    delete channels[i];
+
+  delete[] channels;
 }
 
 

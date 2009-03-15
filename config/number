@@ -2,7 +2,7 @@
 #
 # Channel numbering for ATSC EPG
 #
-# Accepts three parameters: 
+# Accepts two parameters: 
 #   $1 : Major channel number
 #   $2 : Minor channel number
 #

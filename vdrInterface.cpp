@@ -88,13 +88,13 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 
 void VDRInterface::AddChannels(const VCT& vct)
 {
-	currentTID = vct.TID();
+	currentTID = vct.TID(); //XXX: Still need currentTID???
 	
 	for (u8 i=0; i<vct.NumberOfChannels(); i++)
 	{
-		const Channel* ch = vct.GetChannel(i); 
+		const AtscChannel* ch = vct.GetChannel(i); 
     
-    cChannel* c = GetChannel(ch->source_id, vct.TableID());
+    cChannel* c = GetChannel(ch->Sid(), vct.TableID());
     
     if (c) {
 			//TODO: Add/Update channels
@@ -218,7 +218,7 @@ void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) 
 
 //----------------------------------------------------------------------------
 
-void VDRInterface::DisplayChannelInfo(const Channel* ch, u8 table_id) const
+void VDRInterface::DisplayChannelInfo(const AtscChannel* ch, u8 table_id) const
 { //TODO: Update for VDR 1.7.x. Do we really need this anyway?
 /*
   char c = (table_id == 0xC9) ? 'C' : 'T';

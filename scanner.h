@@ -43,6 +43,7 @@ private:
   void AddLine(const char* Text, ...); 
   void UpdateLastLine(const char* Text);
   int Number(uint16_t major, uint16_t minor);
+  void SetTransponderData(cChannel* c, int frequency);
   
   virtual void Process(u_short Pid, u_char Tid, const u_char *Data, int Length);
   

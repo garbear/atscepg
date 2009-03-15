@@ -83,14 +83,7 @@ void cATSCScanner::Action(void)
   if (file == NULL) AddLine("Could not open output file.");
    
   cChannel* c = new cChannel();
-  
-#if VDRVERSNUM < 10700    
-  c->SetTerrTransponderData(cSource::stTerr, 0, 999, 7, 999, 999,999, 999, 999);
-#elif VDRVERSNUM < 10702
-  c->SetTerrTransponderData(cSource::stTerr, 0, 999, MapToDriver(10, ModulationValues), 999, 999,999, 999, 999, 0, 0);
-#else
-  c->SetTerrTransponderData(cSource::stTerr, 0, 999, MapToDriver(10, ModulationValues), 999, 999,999, 999, 999);
-#endif 
+  SetTransponderData(c, 0);
 
 #if VDRVERSNUM < 10500  
   cDevice* device = cDevice::GetDevice(c);
@@ -107,16 +100,8 @@ void cATSCScanner::Action(void)
     {
       delete c; 
       c = new cChannel();
+      SetTransponderData(c, ATSCFrequencies[i]);
       currentFrequency = ATSCFrequencies[i];
-
-#if VDRVERSNUM < 10700      
-      c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, 7, 999, 999, 999, 999, 999);
-#elif VDRVERSNUM < 10702
-      c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999, 0, 0);
-#else
-      c->SetTerrTransponderData(cSource::stTerr, ATSCFrequencies[i], 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999);
-#endif  
- 
 
       AddLine("Tuning:\t%d Hz", ATSCFrequencies[i]);
       
@@ -159,44 +144,41 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 
   for (u32 i=0; i<vct.NumberOfChannels(); i++)
 	{
-	  const ::Channel* ch = vct.GetChannel(i);
-
-		const char* shortName = ch->ShortName();
-		const char* longName  = ch->LongName();
+	  AtscChannel* ch = (AtscChannel*) vct.GetChannel(i);
 		
-		AddLine("\t%d.%d  %s", ch->majorChannelNumber, ch->minorChannelNumber, shortName);
+		SetTransponderData(ch->VDRChannel(), currentFrequency);
+	
+		AddLine("\t%d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
 		
-		if (file) {
-		  int chanNum = Number(ch->majorChannelNumber, ch->minorChannelNumber);
+		if (file)
+		{
+		  int chanNum = Number(ch->MajorNumber(), ch->MinorNumber());
 		  if (chanNum == -1)
 		    continue;
-		  else if (chanNum != 0) {
-		    fprintf(file, ":@%d\n", chanNum);
-		  }
-		  
-		  char c = (Tid == 0xC9) ? 'C' : 'T';
-		  
-#if VDRVERSNUM < 10700
-      const char* prm = "M8";
-#else
-      const char* prm = "B6M10";
-#endif
 
-      if (strcmp(longName, "") == 0)  
-        fprintf(file, "%s:%d:%s:%c:0:", shortName, currentFrequency, prm, c);
-      else  
-        fprintf(file, "%s,%s:%d:%s:%c:0:", longName, shortName, currentFrequency, prm, c);
-        
-      if (ch->PCR_PID && ch->PCR_PID != ch->vPID)
-        fprintf(file, "%d+%d:", ch->vPID, ch->PCR_PID);
+	    cString chanText = ch->VDRChannel()->ToText();
+	    if (chanNum)
+        fprintf(file, ":@%d\n%s", chanNum, *chanText);
       else
-        fprintf(file, "%d:", ch->vPID);
-        
-      fprintf(file, "0;%d:0:0:%d:0:%d:0\n", ch->aPID, ch->source_id, vct.TID());  
+        fprintf(file, "%s", *chanText);
 		}
   }	
 
   condWait.Signal(); // We got the VCT don't let the thread wait for nothing!
+}
+
+
+//----------------------------------------------------------------------------
+
+void cATSCScanner::SetTransponderData(cChannel* c, int frequency)
+{
+#if VDRVERSNUM < 10700      
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, 7, 999, 999, 999, 999, 999);
+#elif VDRVERSNUM < 10702
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999, 0, 0);
+#else
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 6000000, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999);
+#endif 
 }
 
 

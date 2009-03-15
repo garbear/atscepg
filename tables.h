@@ -143,17 +143,17 @@ class VCT : public PSIPTable
 {
 public:
 	VCT(const u8* data);
-  virtual ~VCT() { delete[] channels; }	
+  virtual ~VCT();
   
   u8 NumberOfChannels(void)  const { return numberOfChannels; }
-  const Channel* GetChannel(int i) const { return (i<numberOfChannels) ? &channels[i] : NULL; }
+  const AtscChannel* GetChannel(int i) const { return (i<numberOfChannels) ? channels[i] : NULL; }
   u16 TID(void) const { return transport_stream_id; }
   
 private:
   u8 numberOfChannels;
 	u16 transport_stream_id;
 
-	Channel* channels;
+	AtscChannel* (*channels);
 };
 
 

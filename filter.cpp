@@ -284,7 +284,7 @@ void cATSCFilter::ProcessVCT(const uint8_t* data)
     
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
-    channelSIDs.push_back( vct.GetChannel(i)->source_id );
+    channelSIDs.push_back( vct.GetChannel(i)->Sid() );
   }
 }
 

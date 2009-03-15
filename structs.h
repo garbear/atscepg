@@ -22,6 +22,8 @@
 
 #include <string>
 
+#include <vdr/channels.h>
+
 #include "tools.h"
 
 
@@ -70,6 +72,34 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 
+class AtscChannel
+{
+public:
+  AtscChannel(void);
+
+  u16 MajorNumber(void) const { return majorChannelNumber; }
+  u16 MinorNumber(void) const { return minorChannelNumber; }
+  int Sid(void) const { return channel.Sid(); }
+  const char* LongName(void) const  { return channel.Name(); }
+  const char* ShortName(void) const { return channel.ShortName(); }
+  cChannel* VDRChannel(void) { return &channel; }
+    
+  void SetMajorNumber(u16 n) { majorChannelNumber = n; }
+  void SetMinorNumber(u16 n) { minorChannelNumber = n; }
+  void SetId(int Tid, int Sid) { channel.SetId(0, Tid, Sid); };
+  void SetShortName(const char* n) { channel.SetName(n, n, ""); }
+  void SetLongName(const char* n) { channel.SetName(n, channel.ShortName(), ""); }
+  void SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs[][MAXLANGCODE2]);
+  void SetNumber(int Number) { channel.SetNumber(Number); }
+  
+private:
+  cChannel channel;
+  
+	u16 majorChannelNumber;
+	u16 minorChannelNumber;
+};
+
+/*
 struct Channel
 { 
   Channel(void);
@@ -86,29 +116,31 @@ struct Channel
   
   u16 transport_stream_id;
   u16 source_id;
-	u16 aPID;
+	
 	u16 vPID;
 	u16 PCR_PID;
 	u16 majorChannelNumber;
 	u16 minorChannelNumber;
+	
+	char aLang[4];
 		
 private:
   char* short_name;
   char* long_name;
 };
-
+*/
 
 //////////////////////////////////////////////////////////////////////////////
 
 
 struct Stream
 {
-  Stream(void) { stream_type = 0; elementary_PID=0; ISO_639_language_code=0; }
-	Stream(u8 s, u16 p, u32 l) { stream_type=s; elementary_PID=p; ISO_639_language_code=l; }
+  Stream(void) { stream_type = 0; elementary_PID=0; ISO_639_language_code[0]=0; }
 	
 	u8  stream_type;
   u16 elementary_PID;
-	u32 ISO_639_language_code;
+
+	char ISO_639_language_code[4];
 };
 
 //////////////////////////////////////////////////////////////////////////////
