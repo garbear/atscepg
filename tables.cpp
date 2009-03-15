@@ -348,14 +348,14 @@ VCT::VCT(const u8* data) : PSIPTable(data)
           const Stream* s = sld->GetStream(k);
           switch(s->stream_type)
           {
-            case 0x02:
-            case 0x1B:
+            case 0x02: // ITU-T Rec. H.262 | ISO/IEC 13818-2 Video or ISO/IEC 11172-2 constrained parameter video stream
+            case 0x1B: // H.264/MPEG-4 AVC (ISO/IEC 14496-10)
               Vpid = s->elementary_PID;
               Ppid = sld->GetPCR_PID();
               Vtype = s->stream_type;
             break;
             
-            case 0x81:
+            case 0x81: // Audio per ATSC A/53E Annex B
               if (NumDpids < MAXDPIDS) {
                 Dpids[NumDpids] = s->elementary_PID;
                 strncpy(DLangs[NumDpids], s->ISO_639_language_code, 3);
@@ -363,6 +363,16 @@ VCT::VCT(const u8* data) : PSIPTable(data)
               }
             break;
             
+            case 0x05: // ISO/IEC 13818-1 private sections
+            case 0x06: // PES packets containing A/90 streaming, synchronized data
+            case 0x0B: // DSM-CC sections containing A/90 asynchronous data
+            case 0x0D: // DSM-CC addressable sections per A/90
+            case 0x14: // DSM-CC sections containing non-streaming, synchronized data per A/90
+            case 0x95: // Sections conveying A/90 Data Service Table, Network Resources
+            case 0xC2: // PES packets containing A/90 streaming, synchronous data
+              // Ignored for now...
+            break;
+
             default:
               dprint(L_ERR, "Found unknown stream type 0x%02X", s->stream_type);
           }

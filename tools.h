@@ -28,9 +28,9 @@
 
 #ifdef AE_DEBUG
 
-void SetLogType(uint8_t type);
+void SetLogType(uint16_t type);
 
-void dprint(uint8_t type, const char* msg, ...);
+void dprint(uint16_t type, const char* msg, ...);
 
 #else
 
@@ -40,16 +40,23 @@ void dprint(uint8_t type, const char* msg, ...);
 #endif //AE_DEBUG
 
 // Log Types 
-#define L_NONE 0x00
-#define L_MSG  0x01
-#define L_ERR  0x02
-#define L_DBG  0x04
-#define L_DBGV 0x08
-#define L_DAT  0x10
-#define L_OTH  0x20
-#define L_VDR  0x40
-#define L_ALL  0xFF
-  
+#define L_NONE 0x0000
+#define L_MSG  0x0001
+#define L_ERR  0x0002
+#define L_DBG  0x0004
+#define L_DBGV 0x0008
+#define L_DAT  0x0010
+#define L_OTH  0x0020
+#define L_VDR  0x0040
+            // 0x0080
+#define L_MGT  0x0100
+#define L_VCT  0x0200
+#define L_EIT  0x0400
+#define L_ETT  0x0800
+
+#define L_ALL  0xFFFF
+#define L_DEFAULT (L_MSG | L_ERR)
+
 #define u1    bool
 #define u8    uint8_t
 #define u16   uint16_t

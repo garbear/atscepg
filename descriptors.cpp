@@ -130,11 +130,9 @@ void Descriptor::Print(void)
   
 Descriptor* Descriptor::CreateDescriptor(const u8* data)
 {
-  //dprint(L_DBG, "Got %s", DescriptorText(data[0]));
-
   Descriptor* desc = NULL;
   
-  switch( data[0] )
+  switch (data[0])
   {
     case 0x80: // Stuffing Descriptor
       break;
@@ -181,7 +179,7 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
       break;
     
     case 0xAB: // Genre Descriptor
-      return new GenreDescriptor(data);
+      desc = new GenreDescriptor(data);
       break;
   
     default:
@@ -194,7 +192,7 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
 
 //////////////////////////////////////////////////////////////////////////////
 
-// TESTED - ok
+
 // TODO: Not all fields are always specified, find appropriate default values
 AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
 {
@@ -299,7 +297,7 @@ void AC3AudioDescriptor::Print(void)
 
 //////////////////////////////////////////////////////////////////////////////
 
-// TESTED - partial test: ok
+
 CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(data)
 {
   u8 number_of_services = (data[2] & 0x1F);
@@ -338,7 +336,7 @@ ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data) : D
 
 //////////////////////////////////////////////////////////////////////////////
 
-// TESTED - partial test: ok
+
 ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descriptor(data)
 {
   PCR_PID = ((data[2] & 0x1F) << 8) | data[3];
@@ -387,7 +385,7 @@ u8 GenreDescriptor::GetGenre(u8 i)
 
 //////////////////////////////////////////////////////////////////////////////
 
-// TESTED - ok
+
 ContentAdvisoryDescriptor::ContentAdvisoryDescriptor(const u8* data): Descriptor(data)
 {
   u8 rating_region_count = data[2] & 0x3F;
@@ -413,10 +411,11 @@ ContentAdvisoryDescriptor::ContentAdvisoryDescriptor(const u8* data): Descriptor
     }
      
     d += 2 + 2*rated_dimensions + 1 + rating_description_length;
-
   }
 }
 
 
 //////////////////////////////////////////////////////////////////////////////
+
+
 

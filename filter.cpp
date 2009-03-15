@@ -56,6 +56,7 @@ cATSCFilter::cATSCFilter()
   // Set(0x1FFB, 0xCD); // SST
 
   // Set(0x1FFB, 0xCE); // DET
+  // Set(0x1FFB, 0xCF); // DST
   
   // Set(0x1FFB, 0xD3); // DCCT
   // Set(0x1FFB, 0xD4); // DCCSCT
@@ -167,48 +168,52 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
       if (!gotVCT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
       ProcessMGT(Data);
       lastScanMGT = time(NULL);
-      break;
+    break;
       
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
       if (gotVCT) return; 
       ProcessVCT(Data);
       gotVCT = true;
-      break; 
+    break; 
       
     case 0xCA: // RRT: Rating Region Table 
       if (gotRRT) return;
       dprint(L_DBG, "Received RRT: Not yet implemented.");
       //RRT rrt(Data);
       gotRRT = true; 
-      break; 
+    break; 
       
     case 0xCB: // EIT: Event Information Table
       ProcessEIT(Data, Pid);
-      break;
+    break;
       
     case 0xCC: // ETT: Extended Text Table
       ProcessETT(Data);
-      break; 
+    break; 
       
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       dprint(L_MSG, "Received STT.");
       //vdrInterface.UpdateSTT(Data);
       lastScanSTT = time(NULL);
-      break;
+    break;
       
     case 0xCE: // DET
-      dprint(L_ERR, "Received DET: Not yet implemented.");
-      break;
+      dprint(L_DBG, "Received DET: Not yet implemented.");
+    break;
              
     case 0xD3: // DCC 
       dprint(L_DBG, "Received DCC: Not yet implemented.");
-      break;
+    break;
       
     case 0xD4: // DCCSCT
       dprint(L_DBG, "Received DCCSCT: Not yet implemented.");
-      break;        
+    break;
+      
+    default:
+      dprint(L_DBG, "Unknown TID: 0x%02X", Tid);
+    break;   
   }
   
 }
@@ -223,7 +228,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
 
   if ( ((int)newVersion) != GetMGTVersion())
   {
-    dprint(L_MSG, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
+    dprint(L_MSG|L_MGT, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
     if (!mgt)
       mgt = new MGT(data);
     else
@@ -233,7 +238,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
   }
   else 
   { 
-    dprint(L_MSG, "Received MGT: same version, no update (%d).", newVersion); 
+    dprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newVersion); 
     return;
   }
     
@@ -248,17 +253,17 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
     if (t->tid == 0xCC) // ETT 
     { 
       if (t->table_type == 0x0004) { // Channel ETT
-        dprint(L_DBG, "MGT: Found channel ETT PID");
+        dprint(L_MGT, "MGT: Found channel ETT PID");
         // Usually provides a short description, not very useful.
       }  
       else { // Event ETT 
-        dprint(L_DBG, "MGT: Found ETT PID: %d", t->pid);
+        dprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
         ettPids.push_back(t->pid); // Save these for after we have the EITs
       }  
     }  
     else if (t->tid == 0xCB) // EIT
     {
-      dprint(L_DBG, "MGT: Found EIT PID: %d", t->pid);
+      dprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
           
       for (size_t i = 0; i < channelSIDs.size(); i++)
       {
@@ -267,8 +272,8 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
         Add(t->pid, t->tid);
       }
     }
-    //else
-    // dprint(L_ERR, "MGT: Unhandled table id 0x%02X", t->tid);
+    else
+      dprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
   }
 }
 
@@ -277,7 +282,7 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
 
 void cATSCFilter::ProcessVCT(const uint8_t* data)
 {
-  dprint(L_MSG, "Received VCT.");
+  dprint(L_VCT, "Received VCT.");
 
   VCT vct(data);
   vdrInterface.AddChannels(vct);
@@ -308,13 +313,13 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
         found = true;
     }
     if (found)
-      dprint(L_DBG, "Received EIT (SID: %d PID: %d) [Already seen]", sid, Pid );
+      dprint(L_EIT, "Received EIT (SID: %d PID: %d) [Already seen]", sid, Pid );
     else  
-      dprint(L_DBG, "Received EIT not referred to in MGT (SID: %d PID: %d)", sid, Pid );
+      dprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: %d)", sid, Pid );
   }  
   else // Add events to schedule 
   {
-    dprint(L_DBG, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
+    dprint(L_EIT, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
     eitPids.erase(itr);
     Del(Pid, 0xCB);
       
@@ -332,7 +337,7 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
     
   if (eitPids.size() == 0) 
   {
-    dprint(L_MSG, "Received all EITs.");
+    dprint(L_MSG|L_EIT, "Received all EITs.");
 
     // Now start looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -353,11 +358,11 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
     
   if (itr == ettEIDs.end()) 
   {
-    dprint(L_DBG, "Unexpected ETT (EID: %d)", eid);
+    dprint(L_ETT, "Unexpected ETT (EID: %d)", eid);
   }
   else
   {
-    dprint(L_DBG, "Received ETT (EID: %d)", eid);
+    dprint(L_ETT, "Received ETT (EID: %d)", eid);
     ettEIDs.erase(itr);
     // We cannot Del(Pid, Tid) because we do not know how many ETTs 
     // we will get per PID. Or maybe there is a way to know this...
@@ -367,7 +372,7 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
     
   if (ettEIDs.size() == 0) 
   {
-    dprint(L_MSG, "Received all ETTs.");
+    dprint(L_MSG|L_ETT, "Received all ETTs.");
     dprint(L_MSG, "Got all event information for this transport stream.");
       
     // Stop looking for ETTs

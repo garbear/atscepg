@@ -99,36 +99,6 @@ private:
 	u16 minorChannelNumber;
 };
 
-/*
-struct Channel
-{ 
-  Channel(void);
- ~Channel(void);
-  Channel(const Channel& arg);
-
-  const Channel& operator= (const Channel& arg);
-  
-  void SetShortName(const char* shortName);
-  void SetLongName(const char* longName);
-  
-  const char* ShortName(void) const { return short_name; }
-  const char* LongName(void)  const { return long_name;  }
-  
-  u16 transport_stream_id;
-  u16 source_id;
-	
-	u16 vPID;
-	u16 PCR_PID;
-	u16 majorChannelNumber;
-	u16 minorChannelNumber;
-	
-	char aLang[4];
-		
-private:
-  char* short_name;
-  char* long_name;
-};
-*/
 
 //////////////////////////////////////////////////////////////////////////////
 

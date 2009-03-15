@@ -79,7 +79,7 @@ cPluginAtscepg::cPluginAtscepg(void)
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
-  SetLogType(L_ERR | L_MSG);
+  SetLogType(L_DEFAULT | L_MGT | L_DBG);
 
   lastChannel = -1;
   modATSC = 0;

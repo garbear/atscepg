@@ -137,6 +137,8 @@ AtscChannel::AtscChannel(void)
 }
 
 
+//----------------------------------------------------------------------------
+
 void AtscChannel::SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs[][MAXLANGCODE2])
 {
   int Apids[1] = { 0 };
@@ -150,80 +152,7 @@ void AtscChannel::SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs
 #endif
 }
 
-#if 0
-Channel::Channel(void)
-{
-  transport_stream_id = 0;
-  source_id           = 0;
-  aPID                = 0;
-  vPID                = 0;
-  PCR_PID             = 0;
-  majorChannelNumber  = 0;
-  minorChannelNumber  = 0;
-  short_name          = strdup("");
-  long_name           = strdup("");
-}
+
+//////////////////////////////////////////////////////////////////////////////
 
 
-//----------------------------------------------------------------------------
-
-Channel::~Channel(void)
-{
-  free(short_name);
-  free(long_name);
-}
-
-
-//----------------------------------------------------------------------------
-
-Channel::Channel(const Channel& arg)
-{
-  transport_stream_id = arg.transport_stream_id;
-  source_id           = arg.source_id;
-  aPID                = arg.aPID;
-  vPID                = arg.vPID;
-  PCR_PID             = arg.PCR_PID ;
-  majorChannelNumber  = arg.majorChannelNumber;
-  minorChannelNumber  = arg.minorChannelNumber;
-  short_name          = strdup(arg.short_name);
-  long_name           = strdup(arg.long_name);
-}
-
-
-//----------------------------------------------------------------------------
-
-const Channel& Channel::operator= (const Channel& arg)
-{
-  transport_stream_id = arg.transport_stream_id;
-  source_id           = arg.source_id;
-  aPID                = arg.aPID;
-  vPID                = arg.vPID;
-  PCR_PID             = arg.PCR_PID ;
-  majorChannelNumber  = arg.majorChannelNumber;
-  minorChannelNumber  = arg.minorChannelNumber;
-  free(short_name);
-  free(long_name);
-  short_name          = strdup(arg.short_name);
-  long_name           = strdup(arg.long_name);
-}
-
-
-//----------------------------------------------------------------------------
- 
-void Channel::SetShortName(const char* shortName)
-{
-  free(short_name);
-  short_name = strdup(shortName);
-}
-
-
-//----------------------------------------------------------------------------
-
-void Channel::SetLongName(const char* longName) 
-{
-  free(long_name);
-  long_name  = strdup(longName);
-}
-#endif
-
-//////////////////////////////////////////////////////////////////////////////  

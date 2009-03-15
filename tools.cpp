@@ -1,9 +1,3 @@
-#include "tools.h"
-
-
-#ifdef AE_DEBUG
-
-#include <stdarg.h>
 /*
  * Copyright (C) 2006-2009 Alex Lasnier <alex@fepg.org>
  *
@@ -23,13 +17,21 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "tools.h"
+
+
+#ifdef AE_DEBUG
+
+#include <stdarg.h>
+
+
 #include <stdlib.h> 
 
-static uint8_t logType = 0;
+static uint16_t logType = 0;
 
-void SetLogType(uint8_t type) { logType = type; }
+void SetLogType(uint16_t type) { logType = type; }
 
-void dprint(uint8_t type, const char* msg, ...)
+void dprint(uint16_t type, const char* msg, ...)
 {
   if (!msg) return;
   
