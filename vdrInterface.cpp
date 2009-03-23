@@ -174,12 +174,14 @@ void VDRInterface::UpdateSTT(const u8* data)
 time_t VDRInterface::GPStoLocal(time_t gps) const
 {
   gps += secs_Between_1Jan1970_6Jan1980;
+  // time_t localTime = timegm(localtime(&gps));
 
-  struct tm* local = localtime(&gps);
-  local->tm_isdst = -1;
-  time_t localTime = timegm(local);
+  time_t now = time(NULL);
+  time_t utc = timelocal(gmtime(&now));
+
+  time_t localTime = gps - (utc - now);
   localTime -= localTime % 60;
-  
+
   return localTime;
 }
 

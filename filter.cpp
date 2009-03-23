@@ -37,7 +37,7 @@
 cATSCFilter::cATSCFilter(int num)
 {
   fNum = num;
-  dfprint(L_DBGV, "(Filter %d) Created.");
+  dfprint(L_DBGV, "Created.");
   mgt = NULL;
 
   gotVCT = false;
@@ -458,7 +458,7 @@ void cATSCFilter::dfprint(uint16_t type, const char* msg, ...)
   vasprintf(&output, msg, ap);
   va_end(ap);
   
-  dprint(type, "(Filter %d) %s", fNum, output);
+  dprint(type, "(F:%d) %s", fNum, output);
   free(output);
 }
 
