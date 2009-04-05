@@ -40,6 +40,7 @@ PSIPTable::PSIPTable(void)
   section_number         = 0;
   last_section_number    = 0;
   protocol_version       = 0;
+  crc_passed             = 0;
 }
 
 
@@ -87,13 +88,11 @@ void PSIPTable::Update(const u8* data)
   section_number         = data[6];
   last_section_number    = data[7];
   protocol_version       = data[8];
-  
-  //CRC_32 = get_u32(data+section_length-1);
-  
-  if ( !SI::CRC32::isValid( (const char*)data, section_length+3) ) {
+
+  crc_passed = SI::CRC32::isValid((const char*)data, section_length+3);
+  if (!crc_passed) {
     dprint(L_ERR, "CRC 32 integrity check failed");    
   }
-
 }
 
 

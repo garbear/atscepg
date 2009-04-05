@@ -166,9 +166,10 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
       if (gotVCT) return; 
-      ProcessVCT(Data);
-      gotVCT = true;
-      Del(0x1FFB, Tid);
+      if (ProcessVCT(Data)) {
+        gotVCT = true;
+        Del(0x1FFB, Tid);
+      }
     break; 
       
     case 0xCA: // RRT: Rating Region Table 
@@ -257,7 +258,7 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data)
 
 //----------------------------------------------------------------------------
   
-void cATSCFilter::ProcessMGT(const uint8_t* data)
+bool cATSCFilter::ProcessMGT(const uint8_t* data)
 {
   // Do we have a newer version?
   uint8_t newVersion = PSIPTable::ExtractVersion(data);
@@ -269,13 +270,16 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
       mgt = new MGT(data);
     else
       mgt->Update(data);
+      
+    if (!mgt->CheckCRC())
+      return false;
 
     SetMGTVersion(newVersion); //XXX: This should probably be done after we have received all data
   }
   else 
   { 
     dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newVersion); 
-    return;
+    return true;
   }
     
   eitPids.clear();  
@@ -319,28 +323,35 @@ void cATSCFilter::ProcessMGT(const uint8_t* data)
         dfprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
     }
   }
+  
+  return true;
 }
 
 
 //----------------------------------------------------------------------------
 
-void cATSCFilter::ProcessVCT(const uint8_t* data)
+bool cATSCFilter::ProcessVCT(const uint8_t* data)
 {
   dfprint(L_VCT|L_MSG, "Received VCT.");
 
   VCT vct(data);
+  if (!vct.CheckCRC())
+    return false;
+
   vdrInterface.AddChannels(vct);
     
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
     channelSIDs.push_back( vct.GetChannel(i)->Sid() );
   }
+  
+  return true;
 }
 
 
 //----------------------------------------------------------------------------
 
-void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
+bool cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
 {
   u16 sid = EIT::ExtractSourceID(data);
   u32 val = (((u32) sid) << 16) | Pid;
@@ -363,11 +374,14 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
   }  
   else // Add events to schedule 
   {
+    EIT eit(data);
+    if (!eit.CheckCRC())
+      return false;
+
     dfprint(L_EIT, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
     eitPids.erase(itr);
     Del(Pid, 0xCB);
-      
-    EIT eit(data);
+    
     vdrInterface.AddEventsToSchedule(eit);
       
     // Now look for ETTs for these events
@@ -387,13 +401,15 @@ void cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
       Add(*i, 0xCC);
     } 
-  } 
+  }
+  
+  return true;
 }
 
 
 //----------------------------------------------------------------------------
 
-void cATSCFilter::ProcessETT(const uint8_t* data)
+bool cATSCFilter::ProcessETT(const uint8_t* data)
 {
   u16 eid = ETT::ExtractEventID(data);
     
@@ -406,11 +422,14 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
   }
   else
   {
+    ETT ett(data);
+    if (!ett.CheckCRC())
+      return false;
+
     dfprint(L_ETT, "Received ETT (EID: %d)", eid);
     ettEIDs.erase(itr);
     // We cannot Del(Pid, Tid) because we do not know how many ETTs 
     // we will get per PID. Or maybe there is a way to know this...
-    ETT ett(data);
     vdrInterface.AddDescription(ett);
   }
     
@@ -423,7 +442,9 @@ void cATSCFilter::ProcessETT(const uint8_t* data)
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
       Del(*i, 0xCC);
     }
-  }   
+  }
+  
+  return true; 
 }
 
 

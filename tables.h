@@ -40,6 +40,7 @@ public:
   
 	virtual void Print(void) const;
 	virtual void Update(const u8* data);
+	bool CheckCRC(void) { return crc_passed; }
 	u8 Version(void) const { return version_number; }
 	u8 TableID(void) const { return table_id; }
 	u32 NumberOfDescriptors(void) const { return descriptors.size(); }
@@ -63,7 +64,8 @@ protected:
   u8  protocol_version;
   // PSIP_table_data()
   //u32 CRC_32;
-
+  bool crc_passed;
+  
 	std::vector<Descriptor*> descriptors; //XXX: replace vector with something else!
 };
 

@@ -50,10 +50,10 @@ private:
   bool ProcessPAT(const uint8_t* data);
   bool ProcessPMT(const uint8_t* data);
   
-  void ProcessMGT(const uint8_t* data);
-  void ProcessVCT(const uint8_t* data);
-  void ProcessEIT(const uint8_t* data, uint16_t Pid);
-  void ProcessETT(const uint8_t* data);
+  bool ProcessMGT(const uint8_t* data);
+  bool ProcessVCT(const uint8_t* data);
+  bool ProcessEIT(const uint8_t* data, uint16_t Pid);
+  bool ProcessETT(const uint8_t* data);
   
   int GetMGTVersion(void);
   void SetMGTVersion(uint8_t version);
