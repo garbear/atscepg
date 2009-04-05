@@ -25,135 +25,135 @@
 
 const char* TableTypeText(u16 type)
 {
-	if      (type == 0x0000)
-		return "Terrestrial VCT with current_next_indicator=’1’";
-	else if (type == 0x0001)
-		return "Terrestrial VCT with current_next_indicator=’0’";
-	else if (type == 0x0002)
-		return "Cable VCT with current_next_indicator=’1’";
-	else if (type == 0x0003)
-		return "Cable VCT with current_next_indicator=’0’";		
-	else if (type == 0x0004)
-		return "Channel ETT";		
-	else if (type == 0x0005)
-		return "DCCSCT";
-	else if ((type >= 0x0006 && type <= 0x00FF) || (type >= 0x0180 && type <= 0x01FF) ||	
-	         (type >= 0x0280 && type <= 0x0300) || (type >= 0x1000 && type <= 0x13FF) ||
-	         (type >= 0x1500))
-	  return "Reserved for future ATSC use";
-	else if (type >= 0x0400 && type <= 0x0FFF)
-	  return "User private";
-	else if (type >= 0x0100 && type <= 0x017F)
-	  return "EIT";	
-	else if (type >= 0x0200 && type <= 0x027F)
-	  return "ETT";	
-	else if (type >= 0x0301 && type <= 0x03FF)
-	  return "RRT";	
-	else if (type >= 0x1400 && type <= 0x14FF)
-	  return "DCCT";					 
+  if      (type == 0x0000)
+    return "Terrestrial VCT with current_next_indicator=’1’";
+  else if (type == 0x0001)
+    return "Terrestrial VCT with current_next_indicator=’0’";
+  else if (type == 0x0002)
+    return "Cable VCT with current_next_indicator=’1’";
+  else if (type == 0x0003)
+    return "Cable VCT with current_next_indicator=’0’";    
+  else if (type == 0x0004)
+    return "Channel ETT";    
+  else if (type == 0x0005)
+    return "DCCSCT";
+  else if ((type >= 0x0006 && type <= 0x00FF) || (type >= 0x0180 && type <= 0x01FF) ||  
+           (type >= 0x0280 && type <= 0x0300) || (type >= 0x1000 && type <= 0x13FF) ||
+           (type >= 0x1500))
+    return "Reserved for future ATSC use";
+  else if (type >= 0x0400 && type <= 0x0FFF)
+    return "User private";
+  else if (type >= 0x0100 && type <= 0x017F)
+    return "EIT";  
+  else if (type >= 0x0200 && type <= 0x027F)
+    return "ETT";  
+  else if (type >= 0x0301 && type <= 0x03FF)
+    return "RRT";  
+  else if (type >= 0x1400 && type <= 0x14FF)
+    return "DCCT";           
  
-	return "Unknown";
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
 u8 TableTypeToTID(u16 type)
 {
-	if      (type == 0x0000 || type == 0x0001) return 0xC8;
-	else if (type == 0x0002 || type == 0x0003) return 0xC9;	
-	else if (type == 0x0004) return 0xCC;		
-	else if (type == 0x0005) return 0xD4;
-	else if (type >= 0x0100 && type <= 0x017F) return 0xCB;	
-	else if (type >= 0x0200 && type <= 0x027F) return 0xCC;	
-	else if (type >= 0x0301 && type <= 0x03FF) return 0xCA;	
-	else if (type >= 0x1400 && type <= 0x14FF) return 0xD3;					 
+  if      (type == 0x0000 || type == 0x0001) return 0xC8;
+  else if (type == 0x0002 || type == 0x0003) return 0xC9;  
+  else if (type == 0x0004) return 0xCC;    
+  else if (type == 0x0005) return 0xD4;
+  else if (type >= 0x0100 && type <= 0x017F) return 0xCB;  
+  else if (type >= 0x0200 && type <= 0x027F) return 0xCC;  
+  else if (type >= 0x0301 && type <= 0x03FF) return 0xCA;  
+  else if (type >= 0x1400 && type <= 0x14FF) return 0xD3;           
  
-	return 0x00;
+  return 0x00;
 }
 
 //----------------------------------------------------------------------------
 
 const char* ModulationModeText(u8 type)
 {
-	if      (type == 0x00)	return "Reserved";
-	else if (type == 0x01)	return "Analog";
-	else if (type == 0x02)	return "SCTE Mode 1 (QAM-64)";
-	else if (type == 0x03)	return "SCTE Mode 2 (QAM-256)";
-	else if (type == 0x04)	return "ATSC (8-VSB)";
-	else if (type == 0x05)	return "ATSC (16-VSB)";
-	else if (type >= 0x06 && type <= 0x7F)
-													return "Reserved for future use by ATSC";
-	else if (type >= 0x80)  return "User Private";
-	
-	return "Unknown";
+  if      (type == 0x00)  return "Reserved";
+  else if (type == 0x01)  return "Analog";
+  else if (type == 0x02)  return "SCTE Mode 1 (QAM-64)";
+  else if (type == 0x03)  return "SCTE Mode 2 (QAM-256)";
+  else if (type == 0x04)  return "ATSC (8-VSB)";
+  else if (type == 0x05)  return "ATSC (16-VSB)";
+  else if (type >= 0x06 && type <= 0x7F)
+                          return "Reserved for future use by ATSC";
+  else if (type >= 0x80)  return "User Private";
+  
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
 const char* ETMLocationText(u8 type, u8 tableID)
 {
-	switch (type)
-	{
-		case 0x00: return "No ETM";
-		case 0x01: return "PTC carrying this PSIP";
-		case 0x02: 
-			if (tableID == 0xC8 || tableID == 0xC9) // VCT
-							 return "PTC specified by the Channel TSID";
-			else if (tableID == 0xCB) // EIT
-							 return "PTC carrying this event";
-			break;
-		case 0x03: return "Reserved for future ATSC use";
-	};
-	
-	return "Unknown";
+  switch (type)
+  {
+    case 0x00: return "No ETM";
+    case 0x01: return "PTC carrying this PSIP";
+    case 0x02: 
+      if (tableID == 0xC8 || tableID == 0xC9) // VCT
+               return "PTC specified by the Channel TSID";
+      else if (tableID == 0xCB) // EIT
+               return "PTC carrying this event";
+      break;
+    case 0x03: return "Reserved for future ATSC use";
+  };
+  
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
 const char* ServiceTypeText(u8 type)
 {
-	if      (type == 0x00)	return "Reserved";
-	else if (type == 0x01)	return "Analog Television";
-	else if (type == 0x02)	return "ATSC Digital Television";
-	else if (type == 0x03)	return "ATSC Audio";
-	else if (type == 0x04)	return "ATSC Data Only";	
-	else if (type >= 0x05 && type <= 0x3F)
-													return "Reserved for future ATSC use";
-													
-	return "Unknown";													
+  if      (type == 0x00)  return "Reserved";
+  else if (type == 0x01)  return "Analog Television";
+  else if (type == 0x02)  return "ATSC Digital Television";
+  else if (type == 0x03)  return "ATSC Audio";
+  else if (type == 0x04)  return "ATSC Data Only";  
+  else if (type >= 0x05 && type <= 0x3F)
+                          return "Reserved for future ATSC use";
+                          
+  return "Unknown";                          
 }
 
 //----------------------------------------------------------------------------
 
 const char* DescriptorText(u8 type)
 {
-	switch (type)
-	{
-		case 0x80:	return "Stuffing Descriptor";
-		case 0x81:	return "AC-3 Audio Descriptor";
-		case 0x86:	return "Caption Service Descriptor";
-		case 0x87:	return "Content Advisory Descriptor";
-		case 0xA0:	return "Extended Channel Name Descriptor";
-		case 0xA1:	return "Service Location Descriptor";
-		case 0xA2:	return "Time-Shifted Service Descriptor";
-		case 0xA3:	return "Component Name Descriptor";
-		case 0xA8:	return "DCC Departing Request Descriptor";
-		case 0xA9:	return "DCC Arriving Request Descriptor";
-		case 0xAA:	return "Redistribution Control Descriptor";
-		case 0xAD:	return "ATSC Private Information Descriptor";
-		case 0xB6:	return "Content Identifier Descriptor";
-		case 0xAB:	return "Genre Descriptor";
-	}
-	
-	return "Unknown";
+  switch (type)
+  {
+    case 0x80:  return "Stuffing Descriptor";
+    case 0x81:  return "AC-3 Audio Descriptor";
+    case 0x86:  return "Caption Service Descriptor";
+    case 0x87:  return "Content Advisory Descriptor";
+    case 0xA0:  return "Extended Channel Name Descriptor";
+    case 0xA1:  return "Service Location Descriptor";
+    case 0xA2:  return "Time-Shifted Service Descriptor";
+    case 0xA3:  return "Component Name Descriptor";
+    case 0xA8:  return "DCC Departing Request Descriptor";
+    case 0xA9:  return "DCC Arriving Request Descriptor";
+    case 0xAA:  return "Redistribution Control Descriptor";
+    case 0xAD:  return "ATSC Private Information Descriptor";
+    case 0xB6:  return "Content Identifier Descriptor";
+    case 0xAB:  return "Genre Descriptor";
+  }
+  
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
 const char* StreamTypeText(u8 type)
 {
-	switch (type)
-	{
+  switch (type)
+  {
     case 0x02: return "ITU-T Rec. H.262";
     case 0x06: return "PES packets containing A/90 streaming, synchronized data";
     case 0x0B: return "DSM-CC sections containing A/90 asynchronous data";
@@ -162,28 +162,28 @@ const char* StreamTypeText(u8 type)
     case 0x81: return "Audio per ATSC A/53E";
     case 0x95: return "Sections conveying A/90 Data Service Table, Network Resources Table";
     case 0xC2: return "PES packets containing A/90 streaming, synchronous data";
-	}
-	
-	return "Unknown";
+  }
+  
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
 
 const char* SampleRateText(u8 type)
 {
-	switch (type)
-	{
-	  case  0: return "48 kbps";
-	  case  1: return "44.1 kbps";
-	  case  2: return "32 kbps";
-	  case  3: return "Reserved";
-	  case  4: return "48 kbps or 44.1 kbps";
-	  case  5: return "48 kbps or 32 kbps";
-	  case  6: return "44.1 kbps or 32 kbps";
-	  case  7: return "48 kbps or 44.1 kbps or 32 kbps";
-	}
-	
-	return "Unknown";
+  switch (type)
+  {
+    case  0: return "48 kbps";
+    case  1: return "44.1 kbps";
+    case  2: return "32 kbps";
+    case  3: return "Reserved";
+    case  4: return "48 kbps or 44.1 kbps";
+    case  5: return "48 kbps or 32 kbps";
+    case  6: return "44.1 kbps or 32 kbps";
+    case  7: return "48 kbps or 44.1 kbps or 32 kbps";
+  }
+  
+  return "Unknown";
 }
 
 //----------------------------------------------------------------------------
@@ -218,13 +218,13 @@ const char* BitRateText(u8 type)
 const char* SurroundModeText(u8 type)
 {
   switch (type)
-	{
-	  case 0: return "Not indicated";
-	  case 1: return "Not Dolby surround encoded";
-	  case 2: return "Dolby surround encoded";
-	  case 3: return "Reserved";
-	}
-	
+  {
+    case 0: return "Not indicated";
+    case 1: return "Not Dolby surround encoded";
+    case 2: return "Dolby surround encoded";
+    case 3: return "Reserved";
+  }
+  
   return "Unknown"; 
 }
 
@@ -297,12 +297,12 @@ static const char* const genres[] = {
 
 const char* GenreText(u8 type)
 {
-	if (type == 0xFF)
-	  return "Not a Category";
-	if (type >= 0xAE && type <= 0xFE)
-	  return "Reserved (Detailed)";
-	 
-	return genres[type];
+  if (type == 0xFF)
+    return "Not a Category";
+  if (type >= 0xAE && type <= 0xFE)
+    return "Reserved (Detailed)";
+   
+  return genres[type];
 }
 
 

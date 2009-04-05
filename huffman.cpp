@@ -53,23 +53,23 @@ extern struct HuffmanTable Table255[];
 
 string Uncompressed(const u8* buf, u8 len, u8 mode)
 {
-	string str = "";
-	
-	// Basic Runlength Encoding
+  string str = "";
+  
+  // Basic Runlength Encoding
   if (mode <= 0x06 || (0x09 <= mode && mode <= 0x0E) || (mode == 0x10) ||
      (0x20 <= mode && mode <= 0x27) || (0x30 <= mode && mode <= 0x33)) 
   { 
     int hb = mode << 8;
     for (int j = 0; j < len; j++) 
     {
-    	char c = hb | buf[j];
-			str += c;
+      char c = hb | buf[j];
+      str += c;
     }
   } 
   // Standard Compression Scheme for Unicode (SCSU)
   else if (mode == 0x3E) 
   {
-  	str = "TODO SCSU encoding";    
+    str = "TODO SCSU encoding";    
   } 
   //  Unicode, UTF-16 Form
   else if (mode == 0x3F) 
@@ -78,7 +78,7 @@ string Uncompressed(const u8* buf, u8 len, u8 mode)
     for (int j = 0; j < (len>>1); j++)
     {
       char c = (ustr[j] << 8) | (ustr[j] >> 8);
-    	str += c;
+      str += c;
     }
   } 
   else if (0x40 == mode || mode == 0x41)
@@ -119,7 +119,7 @@ static inline uint Huffman1GetBit(const unsigned char* src, uint bit)
 string ATSCHuffman1toString(const unsigned char* compressed, uint size, uint tableIndex)
 {
   string retval = "";
-		
+    
   const unsigned char* table = ATSCTables[tableIndex];
   int totalbits = size * 8;
   int bit = 0;
@@ -127,12 +127,12 @@ string ATSCHuffman1toString(const unsigned char* compressed, uint size, uint tab
   int node = 0;
   uint thebit;
   unsigned char val;
-		
+    
   while (bit < totalbits)
   {
     thebit = Huffman1GetBit(compressed, bit);
     val = (thebit) ? table[root + (2 * node) + 1] : table[root + (2 * node)];
-				
+        
     if (val & 0x80)
     {
       // Got a Null Character so return 

@@ -33,42 +33,42 @@
 
 bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 {
-	cChannel* c = GetChannel( eit.SourceID() , eit.TableID() );
+  cChannel* c = GetChannel( eit.SourceID() , eit.TableID() );
 
-	if (c)
-	{
-		bool modified = false;
-		
+  if (c)
+  {
+    bool modified = false;
+    
     cSchedulesLock SchedulesLock;
     const cSchedules* Schedules = cSchedules::Schedules(SchedulesLock);
   
-	  cSchedule* s = (cSchedule*) Schedules->GetSchedule(c, true);
+    cSchedule* s = (cSchedule*) Schedules->GetSchedule(c, true);
 
-	  for (u32 i=0; i<eit.NumberOfEvents(); i++)
-	  {
-	  	const Event* e = eit.GetEvent(i);
+    for (u32 i=0; i<eit.NumberOfEvents(); i++)
+    {
+      const Event* e = eit.GetEvent(i);
 
-	    // Check if event already exit
-	    cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id, GPStoLocal(e->start_time) );
-	    if (!pEvent)
-	    {
-	      dprint(L_VDR, "New event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
-	      s->AddEvent( CreateVDREvent(e) );
-	      modified = true;
-	    } 
-	    else
-	    {
-	      dprint(L_VDR, "Old event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
-	      dprint(L_VDR, "      was: id %d (sid: ?, tid: %d, ver: %d)", pEvent->EventID(), pEvent->TableID(), pEvent->Version());
-	      pEvent->SetSeen();
-	      
-	      if (pEvent->Version() < e->version_number)
-	      {
-	        dprint(L_VDR, "           new version!");
-	        ToVDREvent(e, pEvent, true);
-	        modified = true;  
-	      }
-	    }
+      // Check if event already exit
+      cEvent* pEvent = (cEvent*) s->GetEvent(e->event_id, GPStoLocal(e->start_time) );
+      if (!pEvent)
+      {
+        dprint(L_VDR, "New event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
+        s->AddEvent( CreateVDREvent(e) );
+        modified = true;
+      } 
+      else
+      {
+        dprint(L_VDR, "Old event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
+        dprint(L_VDR, "      was: id %d (sid: ?, tid: %d, ver: %d)", pEvent->EventID(), pEvent->TableID(), pEvent->Version());
+        pEvent->SetSeen();
+        
+        if (pEvent->Version() < e->version_number)
+        {
+          dprint(L_VDR, "           new version!");
+          ToVDREvent(e, pEvent, true);
+          modified = true;  
+        }
+      }
     }
     
     if (modified) 
@@ -88,64 +88,64 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 
 void VDRInterface::AddChannels(const VCT& vct)
 {
-	currentTID = vct.TID(); //XXX: Still need currentTID???
-	
-	for (u8 i=0; i<vct.NumberOfChannels(); i++)
-	{
-		const AtscChannel* ch = vct.GetChannel(i); 
+  currentTID = vct.TID(); //XXX: Still need currentTID???
+  
+  for (u8 i=0; i<vct.NumberOfChannels(); i++)
+  {
+    const AtscChannel* ch = vct.GetChannel(i); 
     
     cChannel* c = GetChannel(ch->Sid(), vct.TableID());
     
     if (c) {
-			//TODO: Add/Update channels
+      //TODO: Add/Update channels
     }
     else
     {
-    	//fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
-    	//DisplayChannelInfo(ch, vct.TableID());
+      //fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
+      //DisplayChannelInfo(ch, vct.TableID());
     }
-	}
+  }
 }
 
 //----------------------------------------------------------------------------
 
 bool VDRInterface::AddDescription(const ETT& ett)
 {
-	u16 eid = ett.EventID();
+  u16 eid = ett.EventID();
 
-	cChannel* c = GetChannel( ett.SourceID() , ett.TableID() );
+  cChannel* c = GetChannel( ett.SourceID() , ett.TableID() );
 
-	if (c)
-	{
-		//TODO: Other languages...
-		std::string desc = ett.GetString(0);
-		
-		//std::string desc = "";
-		//for (u32 i=0; i<ett.getNumStrings(); i++)
-		//  desc += ett.getString(i);
-		
-	  if (eid) // Event ETM
-	  {
-			cSchedulesLock SchedulesLock;
+  if (c)
+  {
+    //TODO: Other languages...
+    std::string desc = ett.GetString(0);
+    
+    //std::string desc = "";
+    //for (u32 i=0; i<ett.getNumStrings(); i++)
+    //  desc += ett.getString(i);
+    
+    if (eid) // Event ETM
+    {
+      cSchedulesLock SchedulesLock;
       const cSchedules* Schedules = cSchedules::Schedules(SchedulesLock);
   
-	    cSchedule* s = (cSchedule*) Schedules->GetSchedule(c, true);
-	    
-	    cEvent* e = (cEvent*) s->GetEvent( eid );
-	    if (e) 
-	    {	    	
-	      e->SetDescription( desc.c_str() );
+      cSchedule* s = (cSchedule*) Schedules->GetSchedule(c, true);
+      
+      cEvent* e = (cEvent*) s->GetEvent( eid );
+      if (e) 
+      {        
+        e->SetDescription( desc.c_str() );
       }
       else return false;
-	  }
-	  else // Channel ETM
-	  {
-			dprint(L_DBG, "Got Channel ETM");
-	  }
-	}
-	else return false;
-	
-	return true;
+    }
+    else // Channel ETM
+    {
+      dprint(L_DBG, "Got Channel ETM");
+    }
+  }
+  else return false;
+  
+  return true;
 }
 
 //----------------------------------------------------------------------------
@@ -153,7 +153,7 @@ bool VDRInterface::AddDescription(const ETT& ett)
 cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 {
   u32 source = (table_id == 0xC9) ? 0x4000 : 0xC000;
-	tChannelID channelIDSearch(source, 0x00, currentTID, source_id);
+  tChannelID channelIDSearch(source, 0x00, currentTID, source_id);
    
   return Channels.GetByChannelID(channelIDSearch, true, true);
 }
@@ -162,14 +162,14 @@ cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 
 void VDRInterface::UpdateSTT(const u8* data)
 {
-	if (!stt) 
-	  stt = new STT(data);
-	else
-	  stt->Update(data);
+  if (!stt) 
+    stt = new STT(data);
+  else
+    stt->Update(data);
 }
 
 //----------------------------------------------------------------------------
-#define	 secs_Between_1Jan1970_6Jan1980	 315982800
+#define   secs_Between_1Jan1970_6Jan1980   315982800
 
 time_t VDRInterface::GPStoLocal(time_t gps) const
 {
@@ -189,8 +189,8 @@ time_t VDRInterface::GPStoLocal(time_t gps) const
 
 cEvent* VDRInterface::CreateVDREvent(const Event* event) const
 {
-	cEvent* vdrEvent = new cEvent(event->event_id);
-	
+  cEvent* vdrEvent = new cEvent(event->event_id);
+  
   ToVDREvent(event, vdrEvent, false);
     
   return vdrEvent; 

@@ -37,9 +37,9 @@ struct Table
   Table(const Table& arg);
   const Table& operator= (const Table& arg);
   
-	u16 pid;
-	u8  tid;
-	u16 table_type;
+  u16 pid;
+  u8  tid;
+  u16 table_type;
 };
 
 
@@ -95,8 +95,8 @@ public:
 private:
   cChannel channel;
   
-	u16 majorChannelNumber;
-	u16 minorChannelNumber;
+  u16 majorChannelNumber;
+  u16 minorChannelNumber;
 };
 
 
@@ -106,11 +106,11 @@ private:
 struct Stream
 {
   Stream(void) { stream_type = 0; elementary_PID=0; ISO_639_language_code[0]=0; }
-	
-	u8  stream_type;
+  
+  u8  stream_type;
   u16 elementary_PID;
 
-	char ISO_639_language_code[4];
+  char ISO_639_language_code[4];
 };
 
 //////////////////////////////////////////////////////////////////////////////

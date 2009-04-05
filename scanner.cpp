@@ -45,15 +45,15 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   dprint(L_DBGV, "ATSC Scanner Created.");
   SetHelp("Cancel");
   
-	Set(0x1FFB, 0xC8); // VCT-T
-	Set(0x1FFB, 0xC9); // VCT-C
-	
-	dir = cPlugin::ConfigDirectory("atscepg");
-	asprintf(&numberCmd, "%s/number", cPlugin::ConfigDirectory("atscepg"));
-	
-	file = NULL;
-	currentFrequency = 0;
-	
+  Set(0x1FFB, 0xC8); // VCT-T
+  Set(0x1FFB, 0xC9); // VCT-C
+  
+  dir = cPlugin::ConfigDirectory("atscepg");
+  asprintf(&numberCmd, "%s/number", cPlugin::ConfigDirectory("atscepg"));
+  
+  file = NULL;
+  currentFrequency = 0;
+  
   Display();
   Start(); 
 }
@@ -143,26 +143,26 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
   AddLine("\tReceived VCT: found %d channels.", vct.NumberOfChannels());
 
   for (u32 i=0; i<vct.NumberOfChannels(); i++)
-	{
-	  AtscChannel* ch = (AtscChannel*) vct.GetChannel(i);
-		
-		SetTransponderData(ch->VDRChannel(), currentFrequency);
-	
-		AddLine("\t%d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
-		
-		if (file)
-		{
-		  int chanNum = Number(ch->MajorNumber(), ch->MinorNumber());
-		  if (chanNum == -1)
-		    continue;
+  {
+    AtscChannel* ch = (AtscChannel*) vct.GetChannel(i);
+    
+    SetTransponderData(ch->VDRChannel(), currentFrequency);
+  
+    AddLine("\t%d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
+    
+    if (file)
+    {
+      int chanNum = Number(ch->MajorNumber(), ch->MinorNumber());
+      if (chanNum == -1)
+        continue;
 
-	    cString chanText = ch->VDRChannel()->ToText();
-	    if (chanNum)
+      cString chanText = ch->VDRChannel()->ToText();
+      if (chanNum)
         fprintf(file, ":@%d\n%s", chanNum, *chanText);
       else
         fprintf(file, "%s", *chanText);
-		}
-  }	
+    }
+  }  
 
   condWait.Signal(); // We got the VCT don't let the thread wait for nothing!
 }
