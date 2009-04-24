@@ -31,32 +31,33 @@
 MultipleStringStructure::MultipleStringStructure(const u8* data)
 {
   number_strings = data[0];
-
+    
+  const u8* d = data + 1; 
   for (u8 i=0; i<number_strings; i++)
   {
     //TODO: use ISO_639_language_code
-    //u32 ISO_639_language_code = (data[1] << 16) | (data[2] << 8) | data[3];
-    u8  number_segments = data[4];
-    
+    //u32 ISO_639_language_code = get_u24(d);
+    u8  number_segments = d[3];
+   
     std::string str;
-    const uchar* d = data + 5;
+    const u8* ds = d + 4;
     for (u8 j=0; j<number_segments; j++) 
     {
-      u8 compression_type = d[0];
-      u8 mode             = d[1];
-      u8 number_bytes     = d[2];
+      u8 compression_type = ds[0];
+      u8 mode             = ds[1];
+      u8 number_bytes     = ds[2];
       
       std::string dec;
       switch (compression_type)
       {
         case 0x00: // No compression
-          dec = Uncompressed( d+3 , number_bytes, mode); 
-          break;
+          dec = Uncompressed(ds+3 , number_bytes, mode);    
+        break;
           
         case 0x01: // Huffman - Tables C.4 & C.5
         case 0x02: // Huffman - Tables C.6 & C.7
-          dec = ATSCHuffman1toString(d+3, number_bytes, compression_type);
-          break;
+          dec = ATSCHuffman1toString(ds+3, number_bytes, compression_type);
+        break;
           
         // 0x03 to 0xAF: reserved
         // 0xB0 to 0xFF: Used in other systems
@@ -66,14 +67,13 @@ MultipleStringStructure::MultipleStringStructure(const u8* data)
           dec = "";
       }
       
-      //if (mode == 0x0F)
-      //  dprint(L_ERR, "0x0F: %s", dec.c_str());
       str += dec; // Add decompressed segment
-       
+      ds += (3 + number_bytes);
     }
     
     strings.push_back(str);
-   }
+    d = ds;
+  }
 }
 
 
@@ -327,7 +327,7 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
 
 ExtendedChannelNameDescriptor::ExtendedChannelNameDescriptor(const u8* data) : Descriptor(data)
 {
-  MultipleStringStructure long_channel_name( data + 2 );
+  MultipleStringStructure long_channel_name(data + 2);
   
   // Assume we get a single string
   long_channel_name_text = long_channel_name.GetString(0);
