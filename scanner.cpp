@@ -139,7 +139,14 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
   
   gotVCT = true;
   
-  VCT vct(Data);
+  VCT vct(Data, Length);
+  
+  if (!vct.CheckCRC()) {
+    AddLine("\tReceived VCT with errors, check signal.");
+    condWait.Signal();
+    return;
+  }
+  
   AddLine("\tReceived VCT: found %d channels.", vct.NumberOfChannels());
 
   for (u32 i=0; i<vct.NumberOfChannels(); i++)

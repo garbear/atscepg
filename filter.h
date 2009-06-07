@@ -43,21 +43,22 @@ public:
   void Detach(void);
   
 protected:
-  virtual void Process(u_short Pid, u_char Tid, const u_char* Data, int Length);
+  virtual void Process(u_short Pid, u_char Tid, const u_char* Data, int length);
   virtual void SetStatus(bool On);
   
 private:
-  bool ProcessPAT(const uint8_t* data);
-  bool ProcessPMT(const uint8_t* data);
-  
-  bool ProcessMGT(const uint8_t* data);
-  bool ProcessVCT(const uint8_t* data);
-  bool ProcessEIT(const uint8_t* data, uint16_t Pid);
-  bool ProcessETT(const uint8_t* data);
+  bool ProcessPAT(const uint8_t* data, int length);
+  bool ProcessPMT(const uint8_t* data, int length);
+  bool ProcessMGT(const uint8_t* data, int length);
+  bool ProcessVCT(const uint8_t* data, int length);
+  bool ProcessEIT(const uint8_t* data, int length, uint16_t Pid);
+  bool ProcessETT(const uint8_t* data, int length);
   
   int GetMGTVersion(void);
   void SetMGTVersion(uint8_t version);
 
+  void ResetFilter(void);
+  
   std::map<int, uint8_t> MGTVersions; // Should be shared between instances?
   
   cDevice* attachedDevice;
@@ -70,6 +71,7 @@ private:
   bool gotVCT;
   bool gotRRT;
   int fNum;
+  int prevTransponder;
   
   VDRInterface vdrInterface;
   

@@ -160,12 +160,12 @@ cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 
 //----------------------------------------------------------------------------
 
-void VDRInterface::UpdateSTT(const u8* data)
+void VDRInterface::UpdateSTT(const u8* data, int length)
 {
   if (!stt) 
-    stt = new STT(data);
+    stt = new STT(data, length);
   else
-    stt->Update(data);
+    stt->Update(data, length);
 }
 
 //----------------------------------------------------------------------------

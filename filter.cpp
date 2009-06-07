@@ -45,7 +45,8 @@ cATSCFilter::cATSCFilter(int num)
   
   lastScanMGT = 0;
   lastScanSTT = 0;
-   
+  prevTransponder = -1;
+ 
   attachedDevice = NULL;
   
   Set(0x1FFB, 0xC7); // MGT
@@ -103,35 +104,53 @@ void cATSCFilter::Detach(void)
 
 void cATSCFilter::SetStatus(bool On)
 { 
-  if (On) 
+  if (!On)
   {
-    dfprint(L_DBG, "Resetting");
+    if (prevTransponder != Transponder())
+      cFilter::SetStatus(false); 
+  }
+  else 
+  {
     if (const cChannel* c = Channel())
       dfprint(L_MSG, "Switched to channel %d", c->Number());
-      
-    gotVCT = false;
-    gotRRT = false;
-    
-    lastScanMGT = 0;
-    lastScanSTT = 0;
-    
-    channelSIDs.clear();
 
-    eitPids.clear();
-    ettEIDs.clear();
-    ettPids.clear();
-    
-    // Add(0x0000, 0x00); // PAT
-    Add(0x1FFB, 0xC8); // VCT-T
-    Add(0x1FFB, 0xC9); // VCT-C
-      
-    if (mgt) {
-      delete mgt;
-      mgt = NULL;
-    }  
+    if (prevTransponder != Transponder())
+    {
+      dfprint(L_DBG, "Different transponder: resetting");
+      prevTransponder = Transponder();
+      ResetFilter();
+      cFilter::SetStatus(true);
+    }
+    else 
+    {
+      dfprint(L_DBG, "Same transponder: not resetting");
+    }
   }
-  
-  cFilter::SetStatus(On);
+}
+
+
+//----------------------------------------------------------------------------
+
+void cATSCFilter::ResetFilter(void)
+{
+  gotVCT = false;
+  gotRRT = false;
+
+  lastScanMGT = 0;
+  lastScanSTT = 0;
+
+  channelSIDs.clear();
+
+  eitPids.clear();
+  ettEIDs.clear();
+  ettPids.clear();
+    
+  // Add(0x0000, 0x00); // PAT
+  Add(0x1FFB, 0xC8); // VCT-T
+  Add(0x1FFB, 0xC9); // VCT-C
+      
+  delete mgt;
+  mgt = NULL;
 }
 
 
@@ -141,32 +160,37 @@ void cATSCFilter::SetStatus(bool On)
 #define STT_SCAN_DELAY 60 
 
 
-void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Length)
+void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int length)
 {  
+  if (length < 15) {
+    dfprint(L_ERR, "Insufficient data length.");
+    return;
+  }
+  
   time_t now = time(NULL);
   
   switch (Tid)
   {
     case 0x00: // PAT
-      if (ProcessPAT(Data))
+      if (ProcessPAT(Data, length))
         Del(0x0000, 0x00);
     break;
     
     case 0x02: // PMT
-      if (ProcessPMT(Data))
+      if (ProcessPMT(Data, length))
         Del(Pid, 0x02);
     break;
     
     case 0xC7: // MGT: Master Guide Table
       if (!gotVCT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
-      ProcessMGT(Data);
+      ProcessMGT(Data, length);
       lastScanMGT = time(NULL);
     break;
       
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
       if (gotVCT) return; 
-      if (ProcessVCT(Data)) {
+      if (ProcessVCT(Data, length)) {
         gotVCT = true;
         Del(0x1FFB, Tid);
       }
@@ -180,11 +204,11 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
     break; 
       
     case 0xCB: // EIT: Event Information Table
-      ProcessEIT(Data, Pid);
+      ProcessEIT(Data, length, Pid);
     break;
       
     case 0xCC: // ETT: Extended Text Table
-      ProcessETT(Data);
+      ProcessETT(Data, length);
     break; 
       
     case 0xCD: // STT: System Time Table  
@@ -215,7 +239,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int Lengt
 
 //----------------------------------------------------------------------------
 
-bool cATSCFilter::ProcessPAT(const uint8_t* data)
+bool cATSCFilter::ProcessPAT(const uint8_t* data, int length)
 {
   SI::PAT pat(data, false);
   if (!pat.CheckCRCAndParse())
@@ -235,7 +259,7 @@ bool cATSCFilter::ProcessPAT(const uint8_t* data)
   
 //----------------------------------------------------------------------------
 
-bool cATSCFilter::ProcessPMT(const uint8_t* data)
+bool cATSCFilter::ProcessPMT(const uint8_t* data, int length)
 {
   SI::PMT pmt(data, false);
   if (!pmt.CheckCRCAndParse())
@@ -258,7 +282,7 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data)
 
 //----------------------------------------------------------------------------
   
-bool cATSCFilter::ProcessMGT(const uint8_t* data)
+bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 {
   // Do we have a newer version?
   uint8_t newVersion = PSIPTable::ExtractVersion(data);
@@ -267,9 +291,9 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data)
   {
     dfprint(L_MSG|L_MGT, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
     if (!mgt)
-      mgt = new MGT(data);
+      mgt = new MGT(data, length);
     else
-      mgt->Update(data);
+      mgt->Update(data, length);
       
     if (!mgt->CheckCRC())
       return false;
@@ -330,11 +354,11 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data)
 
 //----------------------------------------------------------------------------
 
-bool cATSCFilter::ProcessVCT(const uint8_t* data)
+bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
 {
   dfprint(L_VCT|L_MSG, "Received VCT.");
 
-  VCT vct(data);
+  VCT vct(data, length);
   if (!vct.CheckCRC())
     return false;
 
@@ -351,7 +375,7 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data)
 
 //----------------------------------------------------------------------------
 
-bool cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
+bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
 {
   u16 sid = EIT::ExtractSourceID(data);
   u32 val = (((u32) sid) << 16) | Pid;
@@ -374,7 +398,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
   }  
   else // Add events to schedule 
   {
-    EIT eit(data);
+    EIT eit(data, length);
     if (!eit.CheckCRC())
       return false;
 
@@ -409,7 +433,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, uint16_t Pid)
 
 //----------------------------------------------------------------------------
 
-bool cATSCFilter::ProcessETT(const uint8_t* data)
+bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
 {
   u16 eid = ETT::ExtractEventID(data);
     
@@ -422,7 +446,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data)
   }
   else
   {
-    ETT ett(data);
+    ETT ett(data, length);
     if (!ett.CheckCRC())
       return false;
 

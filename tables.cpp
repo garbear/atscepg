@@ -78,10 +78,17 @@ void PSIPTable::AddDescriptors(const u8* data, u16 length)
 
 //----------------------------------------------------------------------------
  
-void PSIPTable::Update(const u8* data)
+void PSIPTable::Update(const u8* data, int length)
 {
   table_id               = data[0];
   section_length         = ((data[1] & 0x0F) << 8) | data[2];
+  
+  if (section_length+3 != length) {
+    dprint(L_ERR, "PSIPTable: Insufficient data length.");
+    crc_passed = 0;
+    return;
+  }
+  
   table_id_extension     = get_u16( data+3 );
   version_number         = (data[5] >> 1) & 0x1F;
   current_next_indicator = data[5] & 0x01;
@@ -115,26 +122,32 @@ void PSIPTable::Print() const
 //////////////////////////////////////////////////////////////////////////////
 
 
-MGT::MGT(const u8* data): PSIPTable(data)
+MGT::MGT(const u8* data, int length): PSIPTable(data, length)
 {
-  Parse(data);
+  Parse(data, length);
 }
 
 
 //----------------------------------------------------------------------------
 
-void MGT::Update(const u8* data)
+void MGT::Update(const u8* data, int length)
 {
-  PSIPTable::Update(data);
+  PSIPTable::Update(data, length);
   delete[] tables;
-  Parse(data);
+  Parse(data, length);
 }  
 
 
 //----------------------------------------------------------------------------
 
-void MGT::Parse(const u8* data)
+void MGT::Parse(const u8* data, int length)
 {
+  if (!crc_passed) {
+    numberOfTables = 0;
+    tables = NULL;
+    return;
+  }
+  
   numberOfTables = get_u16( data+9 );
   tables = new Table[numberOfTables];
   
@@ -176,25 +189,29 @@ void MGT::Print() const
 //////////////////////////////////////////////////////////////////////////////
 
 
-STT::STT(const u8* data) : PSIPTable(data)
+STT::STT(const u8* data, int length) : PSIPTable(data, length)
 {
-  Parse(data);
+  Parse(data, length);
 }
 
 
 //----------------------------------------------------------------------------
 
-void STT::Update(const u8* data)
+void STT::Update(const u8* data, int length)
 {
-  PSIPTable::Update(data);
-  Parse(data);
+  PSIPTable::Update(data, length);
+  Parse(data, length);
 }  
 
 
 //----------------------------------------------------------------------------
 
-void STT::Parse(const u8* data)
+void STT::Parse(const u8* data, int length)
 {
+  if (!crc_passed) {
+    return;
+  }
+  
   // Number of seconds since 00:00:00 UTC Jan 6, 1980
   system_time      = get_u32( data+9 );
   GPS_UTC_offset   = data[13]; // Subtract from GPS time for UTC
@@ -233,8 +250,15 @@ void STT::Print(void) const
 //////////////////////////////////////////////////////////////////////////////
 
 
-EIT::EIT(const u8* data) : PSIPTable(data)
-{  
+EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
+{
+  if (!crc_passed) {
+    source_id = 0;
+    numberOfEvents = 0;
+    events = NULL;
+    return;
+  }
+  
   source_id = table_id_extension;
   numberOfEvents  = data[9];
   events = new Event[numberOfEvents];
@@ -283,8 +307,15 @@ EIT::EIT(const u8* data) : PSIPTable(data)
 //////////////////////////////////////////////////////////////////////////////
 
 
-VCT::VCT(const u8* data) : PSIPTable(data)
+VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
 {
+  if (!crc_passed) {
+    transport_stream_id = 0;
+    numberOfChannels = 0;
+    channels = NULL;
+    return;
+  }
+  
   transport_stream_id = table_id_extension;
   numberOfChannels    = data[9];
   channels = new AtscChannel*[numberOfChannels];
@@ -419,14 +450,18 @@ VCT::~VCT()
 //////////////////////////////////////////////////////////////////////////////
 
 
-RRT::RRT(const u8* data) : PSIPTable(data)
+RRT::RRT(const u8* data, int length) : PSIPTable(data, length)
 {
-  u8  rating_region_name_length =  data[9]; 
+  if (!crc_passed) {
+    return;
+  }
+  
+  u8 rating_region_name_length =  data[9]; 
   
   MultipleStringStructure rating_region_name_text( data + 10 );
   rating_region_name_text.Print(); 
 
-  u8  dimensions_defined = data[10 + rating_region_name_length];
+  u8 dimensions_defined = data[10 + rating_region_name_length];
   
   const uchar* d = data + 11 + rating_region_name_length;
   for (u8 i=0; i<dimensions_defined; i++) 
@@ -470,11 +505,18 @@ RRT::RRT(const u8* data) : PSIPTable(data)
 //////////////////////////////////////////////////////////////////////////////
 
 
-ETT::ETT(const u8* data) : PSIPTable(data), MultipleStringStructure( data + 13 )
+ETT::ETT(const u8* data, int length) : PSIPTable(data, length)
 {
-  //u32 ETM_id = get_u32( data + 9 );
+  if (!crc_passed) {
+    source_id = event_id = 0;
+    mss = NULL;
+    return;
+  }
+  
   source_id = get_u16( data + 9 );
   event_id  = (data[11] << 6) | ((data[12] & 0xFC) >> 2);
+  
+  mss = new MultipleStringStructure(data + 13);
 }
 
 

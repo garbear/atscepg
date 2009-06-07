@@ -34,12 +34,12 @@
 class PSIPTable
 {
 public:
-  PSIPTable(const u8* data) { Update(data); }
+  PSIPTable(const u8* data, int length) { Update(data, length); }
   PSIPTable(void);
   virtual ~PSIPTable();
   
   virtual void Print(void) const;
-  virtual void Update(const u8* data);
+  virtual void Update(const u8* data, int length);
   bool CheckCRC(void) { return crc_passed; }
   u8 Version(void) const { return version_number; }
   u8 TableID(void) const { return table_id; }
@@ -77,17 +77,17 @@ protected:
 class MGT : public PSIPTable
 {
 public:
-  MGT(const u8* data);
+  MGT(const u8* data, int length);
   virtual ~MGT() { delete[] tables; }
     
   virtual void Print(void) const;
   u16 NumberOfTables(void) const { return numberOfTables; }
   const Table* GetTable(int i) const { return (i<numberOfTables) ? &tables[i] : NULL; }
-  void Update(const u8* data);
+  void Update(const u8* data, int length);
   
 private:
   u16 numberOfTables;
-  void Parse(const u8* data);
+  void Parse(const u8* data, int length);
   Table* tables;
 };
 
@@ -101,15 +101,15 @@ private:
 class STT : public PSIPTable
 {
 public:
-  STT(const u8* data);
+  STT(const u8* data, int length);
   //virtual ~STT() { }
   time_t GetTime(void) const;
   void Print(void) const;
-  void Update(const u8* data);
+  void Update(const u8* data, int length);
   time_t UTCtoLocal(time_t utc) const;
   
 private:
-  void Parse(const u8* data);
+  void Parse(const u8* data, int length);
   
   u32 system_time;
   u8  GPS_UTC_offset;
@@ -123,7 +123,7 @@ private:
 class EIT : public PSIPTable
 {
 public:
-  EIT(const u8* data);
+  EIT(const u8* data, int length);
   virtual ~EIT() { delete[] events; }  
   //void print(void);
   u8 NumberOfEvents(void) const { return numberOfEvents; }
@@ -145,7 +145,7 @@ private:
 class VCT : public PSIPTable
 {
 public:
-  VCT(const u8* data);
+  VCT(const u8* data, int length);
   virtual ~VCT();
   
   u8 NumberOfChannels(void)  const { return numberOfChannels; }
@@ -166,7 +166,7 @@ private:
 class RRT : public PSIPTable
 {
 public:
-  RRT(const u8* data);
+  RRT(const u8* data, int length);
   //virtual ~RRT() { }  
 
 private:
@@ -177,19 +177,24 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 
-class ETT : public PSIPTable, public MultipleStringStructure
+class ETT : public PSIPTable
 {
 public:
-  ETT(const u8* data);
-  //virtual ~ETT() { }  
+  ETT(const u8* data, int length);
+  virtual ~ETT() { delete mss; }  
   u16 SourceID(void) const { return source_id; }
   u16 EventID(void)  const { return event_id; }
+  
+  u8 NumberOfStrings(void) const { return mss ? mss->NumberOfStrings() : 0; }
+  std::string GetString(u32 i) const { return mss ? mss->GetString(i) : ""; }
   
   static u16 ExtractEventID(const u8* data) { 
     return (data[11] << 6) | ((data[12] & 0xFC) >> 2); 
   }
   
 private:
+  MultipleStringStructure* mss;
+  
   u16 source_id;
   u16 event_id;
 };
