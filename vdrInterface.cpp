@@ -171,18 +171,33 @@ void VDRInterface::UpdateSTT(const u8* data, int length)
 //----------------------------------------------------------------------------
 #define   secs_Between_1Jan1970_6Jan1980   315982800
 
+int TimeZone(void)
+{
+  time_t now = time(NULL);
+  struct tm* local = gmtime(&now);
+  time_t utc = mktime(local);
+  int tz = (int)(difftime(now,utc)/3600);
+  dprint(L_MSG, "Time zone is GMT%c%d", tz<0?'-':'+', abs(tz));
+  return tz; 
+}
+
 time_t VDRInterface::GPStoLocal(time_t gps) const
 {
+  static int timeZone = TimeZone();
   gps += secs_Between_1Jan1970_6Jan1980;
-  // time_t localTime = timegm(localtime(&gps));
-
+  gps -= gps%60;
+  return (gps + 3600*timeZone); 
+  
+/*
+  gps += secs_Between_1Jan1970_6Jan1980;
+  
   time_t now = time(NULL);
   time_t utc = timelocal(gmtime(&now));
 
   time_t localTime = gps - (utc - now);
   localTime -= localTime % 60;
-
   return localTime;
+*/
 }
 
 //----------------------------------------------------------------------------

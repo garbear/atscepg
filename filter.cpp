@@ -199,7 +199,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     case 0xCA: // RRT: Rating Region Table 
       if (gotRRT) return;
       dfprint(L_DBG, "Received RRT: Not yet implemented.");
-      //RRT rrt(Data);
+      //RRT rrt(Data, length);
       gotRRT = true; 
     break; 
       
@@ -214,7 +214,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       dfprint(L_MSG, "Received STT.");
-      //vdrInterface.UpdateSTT(Data);
+      vdrInterface.UpdateSTT(Data, length);
       lastScanSTT = time(NULL);
     break;
       
