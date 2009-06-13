@@ -68,7 +68,8 @@ private:
 
   time_t lastScanMGT;
   time_t lastScanSTT;
-   
+  
+  bool gotMGT;
   bool gotVCT;
   bool gotRRT;
   int fNum;

@@ -40,6 +40,7 @@ cATSCFilter::cATSCFilter(int num)
   dfprint(L_DBGV, "Created.");
   mgt = NULL;
   newMGTVersion = 0;
+  gotMGT = false;
   gotVCT = false;
   gotRRT = false;
   
@@ -141,6 +142,7 @@ void cATSCFilter::SetStatus(bool On)
 
 void cATSCFilter::ResetFilter(void)
 {
+  gotMGT = false;
   gotVCT = false;
   gotRRT = false;
 
@@ -191,9 +193,11 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     break;
     
     case 0xC7: // MGT: Master Guide Table
-      if (!gotVCT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
-      ProcessMGT(Data, length);
-      lastScanMGT = time(NULL);
+      if (!gotVCT || gotMGT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
+      if (ProcessMGT(Data, length)) {
+        gotMGT = true;
+      }
+      lastScanMGT = now;
     break;
       
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
@@ -224,7 +228,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       dfprint(L_MSG, "Received STT.");
       vdrInterface.UpdateSTT(Data, length);
-      lastScanSTT = time(NULL);
+      lastScanSTT = now;
     break;
       
     case 0xCE: // DET
@@ -470,13 +474,14 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
   {
     dfprint(L_MSG|L_ETT, "Received all ETTs.");
     dfprint(L_MSG, "Got all event information for this transport stream.");
-    
-    SetMGTVersion(newMGTVersion);
-    
+
     // Stop looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
       Del(*i, 0xCC);
     }
+    
+    SetMGTVersion(newMGTVersion);
+    gotMGT = false; // Start looking for new versions
   }
   
   return true; 
