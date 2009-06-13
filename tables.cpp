@@ -48,8 +48,7 @@ PSIPTable::PSIPTable(void)
 
 PSIPTable::~PSIPTable()
 {
-  for (u32 i=0; i<descriptors.size(); i++)
-    delete descriptors[i];
+  DeleteDescriptors();
 }
 
 
@@ -73,6 +72,19 @@ void PSIPTable::AddDescriptors(const u8* data, u16 length)
     if (d) descriptors.push_back( d );
     dc += dc[1] + 2;
   }  
+}
+
+
+//----------------------------------------------------------------------------
+
+void PSIPTable::DeleteDescriptors(void)
+{
+  for (u32 i=0; i<descriptors.size(); i++) {
+    delete descriptors[i];
+    descriptors[i] = NULL;
+  }
+  
+  descriptors.clear();
 }
 
 
@@ -277,7 +289,12 @@ EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
     u32 length_in_seconds = ((d[6] & 0x0F) << 16) | (d[7] << 8) | d[8];
     u8  title_length      = d[9];
     
-    MultipleStringStructure title_text( d + 10 );
+    if (title_length > 0) {
+      MultipleStringStructure title_text( d + 10 );
+      events[i].SetTitleText( title_text.GetString(0).c_str() ); // Assume single string title
+    }
+    else
+      events[i].SetTitleText("No Title");
 
     events[i].event_id          = event_id;
     events[i].start_time        = start_time;
@@ -285,12 +302,6 @@ EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
     events[i].version_number    = version_number;
     events[i].table_id          = table_id;
     events[i].ETM_location      = ETM_location; 
-    
-    // Assume single string title
-    if (title_text.NumberOfStrings() > 0)
-      events[i].SetTitleText( title_text.GetString(0).c_str() );
-    else
-      events[i].SetTitleText("No Title");
     
     // reserved     4   ‘1111’
     u16 descriptors_length = ((d[10 + title_length] & 0x0F) << 8) | d[11 + title_length];
@@ -419,7 +430,8 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
       else
         dprint(L_ERR, "Unhandled VCT descriptor 0x%02X",  d->GetTag());  
     }
-    descriptors.clear();
+    
+    DeleteDescriptors();
     
     channels[i]->SetPids(Vpid, Ppid, Vtype, Dpids, DLangs);     
     

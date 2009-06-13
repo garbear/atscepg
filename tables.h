@@ -45,6 +45,7 @@ public:
   u8 TableID(void) const { return table_id; }
   u32 NumberOfDescriptors(void) const { return descriptors.size(); }
   Descriptor* GetDescriptor(u32 i) const;
+  void DeleteDescriptors(void);
   static u8 ExtractVersion(const u8* data) { return (data[5] >> 1) & 0x1F; }
    
 protected:
