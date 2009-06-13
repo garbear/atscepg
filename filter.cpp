@@ -111,8 +111,16 @@ void cATSCFilter::SetStatus(bool On)
   }
   else 
   {
-    if (const cChannel* c = Channel())
-      dfprint(L_MSG, "Switched to channel %d", c->Number());
+    if (const cChannel* c = Channel()) {
+      if (c->Number())
+        dfprint(L_MSG, "Switched to channel %d", c->Number());
+      else {
+        dfprint(L_DBG, "Channel scan: not activating filter");
+        prevTransponder = -1;
+        cFilter::SetStatus(false);
+        return;
+      } 
+    }
 
     if (prevTransponder != Transponder())
     {
