@@ -39,7 +39,7 @@ cATSCFilter::cATSCFilter(int num)
   fNum = num;
   dfprint(L_DBGV, "Created.");
   mgt = NULL;
-
+  newMGTVersion = 0;
   gotVCT = false;
   gotRRT = false;
   
@@ -136,6 +136,7 @@ void cATSCFilter::ResetFilter(void)
   gotVCT = false;
   gotRRT = false;
 
+  newMGTVersion = 0;
   lastScanMGT = 0;
   lastScanSTT = 0;
 
@@ -285,11 +286,11 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data, int length)
 bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 {
   // Do we have a newer version?
-  uint8_t newVersion = PSIPTable::ExtractVersion(data);
+  newMGTVersion = PSIPTable::ExtractVersion(data);
 
-  if ( ((int)newVersion) != GetMGTVersion())
+  if ( ((int)newMGTVersion) != GetMGTVersion())
   {
-    dfprint(L_MSG|L_MGT, "Received MGT: new version, updating (%d -> %d).", GetMGTVersion(), newVersion);
+    dfprint(L_MSG|L_MGT, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
     if (!mgt)
       mgt = new MGT(data, length);
     else
@@ -298,11 +299,11 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
     if (!mgt->CheckCRC())
       return false;
 
-    SetMGTVersion(newVersion); //XXX: This should probably be done after we have received all data
+    //SetMGTVersion(newMGTVersion); //XXX: This should probably be done after we have received all data
   }
   else 
   { 
-    dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newVersion); 
+    dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newMGTVersion); 
     return true;
   }
     
@@ -461,7 +462,9 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
   {
     dfprint(L_MSG|L_ETT, "Received all ETTs.");
     dfprint(L_MSG, "Got all event information for this transport stream.");
-      
+    
+    SetMGTVersion(newMGTVersion);
+    
     // Stop looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
       Del(*i, 0xCC);

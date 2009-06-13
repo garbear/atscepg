@@ -60,6 +60,7 @@ private:
   void ResetFilter(void);
   
   std::map<int, uint8_t> MGTVersions; // Should be shared between instances?
+  uint8_t newMGTVersion;
   
   cDevice* attachedDevice;
 
