@@ -49,7 +49,7 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   Set(0x1FFB, 0xC9); // VCT-C
   
   dir = cPlugin::ConfigDirectory("atscepg");
-  asprintf(&numberCmd, "%s/number", cPlugin::ConfigDirectory("atscepg"));
+  asprintf(&numberCmd, "%s/number", dir);
   
   file = NULL;
   currentFrequency = 0;
@@ -273,11 +273,15 @@ int cATSCScanner::Number(uint16_t major, uint16_t minor)
         result = (char*) realloc(result, l + 21);
       result[l++] = c;
     }
-    if (result)
-      result[l] = 0;
     p.Close();
     
-    num = atoi(result);
+    if (result) {
+      result[l] = 0;
+      num = atoi(result);
+    }
+    else
+      num = 0;
+      
     free(result);
   }
   else
