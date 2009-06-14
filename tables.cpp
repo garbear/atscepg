@@ -235,18 +235,9 @@ void STT::Parse(const u8* data, int length)
 
 //----------------------------------------------------------------------------
 
-time_t STT::UTCtoLocal(time_t utcTime) const
-{
-  //TODO
-  return 0;
-}
-
-
-//----------------------------------------------------------------------------
-
-time_t STT::GetTime(void) const 
+time_t STT::GetGPSTime(void) const 
 { 
-  return UTCtoLocal(system_time);
+  return (system_time - GPS_UTC_offset);
 }
 
 
@@ -254,8 +245,8 @@ time_t STT::GetTime(void) const
 
 void STT::Print(void) const
 {
-  time_t now = GetTime();
-  dprint(L_DAT, "STT: Current Time is %s", ctime( &now) );
+  //time_t now = GetGPSTime();
+  //dprint(L_DAT, "STT: Current Time is %s", ctime( &now) );
 }
 
 

@@ -96,18 +96,14 @@ private:
 //////////////////////////////////////////////////////////////////////////////
 
 
-// Seconds between start of GPS time and the start of UNIX time.
-#define   secs_Between_1Jan1970_6Jan1980   315982800
-
 class STT : public PSIPTable
 {
 public:
   STT(const u8* data, int length);
   //virtual ~STT() { }
-  time_t GetTime(void) const;
+  time_t GetGPSTime(void) const;
   void Print(void) const;
   void Update(const u8* data, int length);
-  time_t UTCtoLocal(time_t utc) const;
   
 private:
   void Parse(const u8* data, int length);

@@ -160,44 +160,36 @@ cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 
 //----------------------------------------------------------------------------
 
+time_t UtcOffset(void)
+{
+  struct tm gps = { 0,0,0,6,0,80,0,0,0 }; // Jan 6, 1980 00:00:00 UTC
+  time_t t = mktime(&gps);
+  return (t + gps.tm_gmtoff);
+}
+
+
+//----------------------------------------------------------------------------
+
 void VDRInterface::UpdateSTT(const u8* data, int length)
 {
   if (!stt) 
     stt = new STT(data, length);
   else
     stt->Update(data, length);
+  
+  // time_t local = stt->GetGPSTime() + UtcOffset();
 }
+
 
 //----------------------------------------------------------------------------
-#define   secs_Between_1Jan1970_6Jan1980   315982800
-
-int TimeZone(void)
-{
-  time_t now = time(NULL);
-  struct tm* local = gmtime(&now);
-  time_t utc = mktime(local);
-  int tz = (int)(difftime(now,utc)/3600);
-  dprint(L_MSG, "Time zone is GMT%c%d", tz<0?'-':'+', abs(tz));
-  return tz; 
-}
 
 time_t VDRInterface::GPStoLocal(time_t gps) const
 {
-  static int timeZone = TimeZone();
-  gps += secs_Between_1Jan1970_6Jan1980;
+  static time_t utc_offset = UtcOffset();
+  gps += utc_offset;
   gps -= gps%60;
-  return (gps + 3600*timeZone); 
-  
-/*
-  gps += secs_Between_1Jan1970_6Jan1980;
-  
-  time_t now = time(NULL);
-  time_t utc = timelocal(gmtime(&now));
-
-  time_t localTime = gps - (utc - now);
-  localTime -= localTime % 60;
-  return localTime;
-*/
+    
+  return gps;
 }
 
 //----------------------------------------------------------------------------
