@@ -31,6 +31,15 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
+VDRInterface::VDRInterface()
+{
+  stt = NULL;
+  currentTID = 0;
+}
+
+
+//----------------------------------------------------------------------------
+
 bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 {
   cChannel* c = GetChannel( eit.SourceID() , eit.TableID() );
@@ -84,12 +93,11 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
   return true; 
 }
 
+
 //----------------------------------------------------------------------------
 
 void VDRInterface::AddChannels(const VCT& vct)
-{
-  currentTID = vct.TID(); //XXX: Still need currentTID???
-  
+{  
   for (u8 i=0; i<vct.NumberOfChannels(); i++)
   {
     const AtscChannel* ch = vct.GetChannel(i); 
@@ -101,11 +109,11 @@ void VDRInterface::AddChannels(const VCT& vct)
     }
     else
     {
-      //fprintf(stderr, "\n[ATSC] Does your channels.conf have correct values?");
-      //DisplayChannelInfo(ch, vct.TableID());
+
     }
   }
 }
+
 
 //----------------------------------------------------------------------------
 
@@ -148,6 +156,7 @@ bool VDRInterface::AddDescription(const ETT& ett)
   return true;
 }
 
+
 //----------------------------------------------------------------------------
 
 cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
@@ -157,6 +166,7 @@ cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
    
   return Channels.GetByChannelID(channelIDSearch, true, true);
 }
+
 
 //----------------------------------------------------------------------------
 
@@ -192,6 +202,7 @@ time_t VDRInterface::GPStoLocal(time_t gps) const
   return gps;
 }
 
+
 //----------------------------------------------------------------------------
 
 cEvent* VDRInterface::CreateVDREvent(const Event* event) const
@@ -222,25 +233,6 @@ void VDRInterface::ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) 
   
   if (event->ETM_location == 0x00) // There is no description for this event
     vdrEvent->SetDescription("No description provided for this event.");
-}
-
-
-//----------------------------------------------------------------------------
-
-void VDRInterface::DisplayChannelInfo(const AtscChannel* ch, u8 table_id) const
-{ //TODO: Update for VDR 1.7.x. Do we really need this anyway?
-/*
-  char c = (table_id == 0xC9) ? 'C' : 'T';
-  int freq = cATSCFilter::Frequency();
-  fprintf(stderr, "\n%s:%d:M8:%c:0:", ch->Name(), freq, c);
-
-  if (ch->PCR_PID && ch->PCR_PID != ch->vPID)
-    fprintf(stderr, "%d+%d:", ch->vPID, ch->PCR_PID);
-  else
-    fprintf(stderr, "%d:", ch->vPID);
-    
-  fprintf(stderr, "0;%d:0:0:%d:0:%d:0\n\n", ch->aPID, ch->source_id, currentTID);
-  */ 
 }
 
 

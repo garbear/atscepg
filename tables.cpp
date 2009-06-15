@@ -92,12 +92,12 @@ void PSIPTable::DeleteDescriptors(void)
  
 void PSIPTable::Update(const u8* data, int length)
 {
-  table_id               = data[0];
-  section_length         = ((data[1] & 0x0F) << 8) | data[2];
+  table_id       = data[0];
+  section_length = ((data[1] & 0x0F) << 8) | data[2];
   
   if (section_length+3 != length) {
     dprint(L_ERR, "PSIPTable: Insufficient data length.");
-    crc_passed = 0;
+    crc_passed = false;
     return;
   }
   
@@ -112,22 +112,6 @@ void PSIPTable::Update(const u8* data, int length)
   if (!crc_passed) {
     dprint(L_ERR, "CRC 32 integrity check failed");    
   }
-}
-
-
-//----------------------------------------------------------------------------
-
-void PSIPTable::Print() const
-{
-  dprint(L_DAT, "   Table ID       : 0x%02X", table_id);
-  dprint(L_DAT, "   Section Length : %u",     section_length); 
-  dprint(L_DAT, "   Table ID Ext   : 0x%04X", table_id_extension);
-  dprint(L_DAT, "   Version Number : %u",     version_number);
-  dprint(L_DAT, "   Cur/Next ind.  : %u",      current_next_indicator);
-  dprint(L_DAT, "   Section Number : 0x%02X", section_number);
-  dprint(L_DAT, "   Last Section # : 0x%02X", last_section_number);
-  dprint(L_DAT, "   Protocol Vers. : %u",     protocol_version);
-  //dprint(L_DAT, "   CRC 32         : 0x%08X", CRC_32);
 }
 
 
@@ -160,13 +144,13 @@ void MGT::Parse(const u8* data, int length)
     return;
   }
   
-  numberOfTables = get_u16( data+9 );
+  numberOfTables = get_u16(data + 9);
   tables = new Table[numberOfTables];
   
   const uchar* d = data + 11;
   for (u16 i=0; i<numberOfTables; i++)
   {
-    u16 tableType = get_u16( d );
+    u16 tableType = get_u16(d);
     
     tables[i].table_type = tableType;
     tables[i].pid = ((d[2] & 0x1F) << 8) | d[3];
@@ -187,14 +171,6 @@ void MGT::Parse(const u8* data, int length)
   //u16 descriptors_length = ((d[0] & 0x0F) << 8) | d[1];
   //AddDescriptors(d+2, descriptors_length);
 
-}
-
-
-//----------------------------------------------------------------------------
-
-void MGT::Print() const
-{
- 
 }
 
 
@@ -241,15 +217,6 @@ time_t STT::GetGPSTime(void) const
 }
 
 
-//----------------------------------------------------------------------------
-
-void STT::Print(void) const
-{
-  //time_t now = GetGPSTime();
-  //dprint(L_DAT, "STT: Current Time is %s", ctime( &now) );
-}
-
-
 //////////////////////////////////////////////////////////////////////////////
 
 
@@ -269,32 +236,22 @@ EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
   const uchar* d = data + 10;
   for (u8 i = 0; i < numberOfEvents; i++)
   {
-    // reserved     2   ‘11’
-    u16 event_id = ((d[0] & 0x3F) << 8) | d[1];
+    events[i].version_number    = version_number;
+    events[i].table_id          = table_id;
+    events[i].event_id = ((d[0] & 0x3F) << 8) | d[1];
+    events[i].start_time = get_u32(d + 2);  
+    events[i].ETM_location      = (d[6] & 0x30) >> 4;
+    events[i].length_in_seconds = ((d[6] & 0x0F) << 16) | (d[7] << 8) | d[8];
     
-    // number of GPS seconds since 00:00:00 UTC, January 6, 1980
-    u32 start_time = get_u32( d+2 );
-    
-    // reserved     2   ‘11’
-    u8  ETM_location      = (d[6] & 0x30) >> 4;
-    u32 length_in_seconds = ((d[6] & 0x0F) << 16) | (d[7] << 8) | d[8];
-    u8  title_length      = d[9];
+    u8 title_length = d[9];
     
     if (title_length > 0) {
-      MultipleStringStructure title_text( d + 10 );
+      MultipleStringStructure title_text(d + 10);
       events[i].SetTitleText( title_text.GetString(0).c_str() ); // Assume single string title
     }
     else
       events[i].SetTitleText("No Title");
 
-    events[i].event_id          = event_id;
-    events[i].start_time        = start_time;
-    events[i].length_in_seconds = length_in_seconds;
-    events[i].version_number    = version_number;
-    events[i].table_id          = table_id;
-    events[i].ETM_location      = ETM_location; 
-    
-    // reserved     4   ‘1111’
     u16 descriptors_length = ((d[10 + title_length] & 0x0F) << 8) | d[11 + title_length];
   
     // Deal with and remove these descriptors right here...
@@ -443,9 +400,11 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
 
 VCT::~VCT()
 { 
-  for (int i=0; i<numberOfChannels; i++)
+  for (int i=0; i<numberOfChannels; i++) {
     delete channels[i];
-
+    channels[i] = NULL;
+  }
+  
   delete[] channels;
 }
 
@@ -473,11 +432,10 @@ RRT::RRT(const u8* data, int length) : PSIPTable(data, length)
 
     MultipleStringStructure dimension_name_text( d + 1 );
     dimension_name_text.Print();
-                     
-    // reserved    3   ‘111’
+
     //u1  graduated_scale = (d[1+dimension_name_length] & 0x10) >> 4;
     u8  values_defined  = (d[1+dimension_name_length] & 0x0F);
-     
+    
     d += 2 + dimension_name_length;
     
     for (u8 j=0; j< values_defined; j ++) 
@@ -494,8 +452,7 @@ RRT::RRT(const u8* data, int length) : PSIPTable(data, length)
       d += 2 + abbrev_rating_value_length + rating_value_length;
     }
   }
-  
-  // reserved    6   ‘111111’
+
   //u16 descriptors_length = ((d[0] & 0x03) << 8) | d[1]; 
  /* 
   for (i=0; i<N; i++) {

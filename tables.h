@@ -37,8 +37,7 @@ public:
   PSIPTable(const u8* data, int length) { Update(data, length); }
   PSIPTable(void);
   virtual ~PSIPTable();
-  
-  virtual void Print(void) const;
+
   virtual void Update(const u8* data, int length);
   bool CheckCRC(void) { return crc_passed; }
   u8 Version(void) const { return version_number; }
@@ -52,19 +51,13 @@ protected:
   void AddDescriptors(const u8* data, u16 length);
   
   u8  table_id;
-  //  section_syntax_indicator ‘1’
-  //  private_indicator        ‘1’
-  //  reserved                 ‘11’
   u16 section_length;
   u16 table_id_extension;
-  //  reserved                 ‘11’
   u8  version_number;
   u1  current_next_indicator;
   u8  section_number;
   u8  last_section_number;
   u8  protocol_version;
-  // PSIP_table_data()
-  //u32 CRC_32;
   bool crc_passed;
   
   std::vector<Descriptor*> descriptors; //XXX: replace vector with something else!
@@ -80,8 +73,7 @@ class MGT : public PSIPTable
 public:
   MGT(const u8* data, int length);
   virtual ~MGT() { delete[] tables; }
-    
-  virtual void Print(void) const;
+
   u16 NumberOfTables(void) const { return numberOfTables; }
   const Table* GetTable(int i) const { return (i<numberOfTables) ? &tables[i] : NULL; }
   void Update(const u8* data, int length);
@@ -102,7 +94,6 @@ public:
   STT(const u8* data, int length);
   //virtual ~STT() { }
   time_t GetGPSTime(void) const;
-  void Print(void) const;
   void Update(const u8* data, int length);
   
 private:
@@ -122,7 +113,7 @@ class EIT : public PSIPTable
 public:
   EIT(const u8* data, int length);
   virtual ~EIT() { delete[] events; }  
-  //void print(void);
+
   u8 NumberOfEvents(void) const { return numberOfEvents; }
   const Event* GetEvent(int i) const { return (i<numberOfEvents) ? &events[i] : NULL; }
   u16 SourceID(void) const { return source_id; }
@@ -178,7 +169,8 @@ class ETT : public PSIPTable
 {
 public:
   ETT(const u8* data, int length);
-  virtual ~ETT() { delete mss; }  
+  virtual ~ETT() { delete mss; }
+    
   u16 SourceID(void) const { return source_id; }
   u16 EventID(void)  const { return event_id; }
   

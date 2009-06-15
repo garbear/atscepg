@@ -375,7 +375,7 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
   if (!vct.CheckCRC())
     return false;
 
-  vdrInterface.AddChannels(vct);
+  vdrInterface.UpdateTID(vct.TID());
     
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
