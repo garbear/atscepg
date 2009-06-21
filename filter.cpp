@@ -262,7 +262,7 @@ bool cATSCFilter::ProcessPAT(const uint8_t* data, int length)
   SI::PAT::Association assoc;
   for (SI::Loop::Iterator it; pat.associationLoop.getNext(assoc, it); ) 
   {
-    dfprint(L_DBG, "PAT: Found PMT (pid: %d, sid: %d)", assoc.getPid(), assoc.getServiceId());
+    dfprint(L_DBG, "PAT: Found PMT (PID: %d, SID: %d)", assoc.getPid(), assoc.getServiceId());
     Add(assoc.getPid(), 0x02);
   }
   
@@ -278,17 +278,22 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data, int length)
   if (!pmt.CheckCRCAndParse())
     return false;
   
+  dfprint(L_DBG, "================== PMT ==================");
+  dfprint(L_DBG, "  SID: %d", pmt.getServiceId());
+  
+  int numStream=1;
   SI::PMT::Stream stream;
   for (SI::Loop::Iterator it; pmt.streamLoop.getNext(stream, it); ) 
   {
+    dfprint(L_DBG, "  Stream %d --- PID: %d, Stream type: 0x%02X", numStream++, stream.getPid(), stream.getStreamType());
     SI::Descriptor *d;
     for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); )
     {
-      dfprint(L_DBG, "DESC: PID=%04X  ST=%02X  TAG=%02X", stream.getPid(), stream.getStreamType(), d->getDescriptorTag());
+      dfprint(L_DBG, "    Descriptor --- Tag: 0x%02X", d->getDescriptorTag());
       delete d;
     }
   } 
-
+  dfprint(L_DBG, "=========================================");
   return true;
 }
 
@@ -316,7 +321,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   else 
   { 
     dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newMGTVersion); 
-    return true;
+    return false;
   }
     
   eitPids.clear();  
@@ -376,7 +381,8 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
     return false;
 
   vdrInterface.UpdateTID(vct.TID());
-    
+  vdrInterface.AddChannels(vct);
+  
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
     channelSIDs.push_back( vct.GetChannel(i)->Sid() );

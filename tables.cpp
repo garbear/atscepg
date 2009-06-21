@@ -238,8 +238,8 @@ EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
   {
     events[i].version_number    = version_number;
     events[i].table_id          = table_id;
-    events[i].event_id = ((d[0] & 0x3F) << 8) | d[1];
-    events[i].start_time = get_u32(d + 2);  
+    events[i].event_id          = ((d[0] & 0x3F) << 8) | d[1];
+    events[i].start_time        = get_u32(d + 2);  
     events[i].ETM_location      = (d[6] & 0x30) >> 4;
     events[i].length_in_seconds = ((d[6] & 0x0F) << 16) | (d[7] << 8) | d[8];
     
@@ -311,8 +311,12 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
     u8  service_type         = (d[27] & 0x3F);
     */
     
-    channels[i]->SetId(transport_stream_id, get_u16(d+28));
-     
+    u16 program_number = get_u16(d+24); // Corresponds to SID in PMT
+    u16 sid = get_u16(d+28);
+    
+    channels[i]->SetId(transport_stream_id, program_number);
+    channels[i]->SetSid(sid);
+    
     u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
     AddDescriptors(d+32, descriptors_length);
     

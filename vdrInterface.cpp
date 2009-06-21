@@ -97,12 +97,18 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
 //----------------------------------------------------------------------------
 
 void VDRInterface::AddChannels(const VCT& vct)
-{  
+{
+  SidTranslation.clear();
+  
   for (u8 i=0; i<vct.NumberOfChannels(); i++)
   {
-    const AtscChannel* ch = vct.GetChannel(i); 
-    
-    cChannel* c = GetChannel(ch->Sid(), vct.TableID());
+    const AtscChannel* ch = vct.GetChannel(i);
+    if (GetVDRSid(ch->Sid()) == -1)
+      SidTranslation[ch->Sid()] = ch->ProgramNumber();
+    else
+      dprint(L_ERR, "Channel has non unique SID");
+/*
+    cChannel* c = GetChannel(ch->ProgramNumber(), vct.TableID());
     
     if (c) {
       //TODO: Add/Update channels
@@ -111,6 +117,7 @@ void VDRInterface::AddChannels(const VCT& vct)
     {
 
     }
+*/
   }
 }
 
@@ -162,9 +169,21 @@ bool VDRInterface::AddDescription(const ETT& ett)
 cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 {
   u32 source = (table_id == 0xC9) ? 0x4000 : 0xC000;
-  tChannelID channelIDSearch(source, 0x00, currentTID, source_id);
+  tChannelID channelIDSearch(source, 0x00, currentTID, GetVDRSid(source_id));
    
   return Channels.GetByChannelID(channelIDSearch, true, true);
+}
+
+
+//----------------------------------------------------------------------------
+
+int VDRInterface::GetVDRSid(u16 sourceId) const
+{
+  std::map<uint16_t,uint16_t>::const_iterator itr = SidTranslation.find(sourceId);
+  if (itr == SidTranslation.end()) // Key not found
+    return -1;
+
+  return itr->second;
 }
 
 

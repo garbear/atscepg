@@ -20,6 +20,7 @@
 #ifndef __VDRINTERFACE_H
 #define __VDRINTERFACE_H
 
+#include <map>
 
 #include  <vdr/channels.h>
 
@@ -46,10 +47,12 @@ public:
 
 private:
   cChannel* GetChannel(u16 s_id, u8 table_id) const;
+  int GetVDRSid(u16 sourceId) const;
   void ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) const;
   cEvent* CreateVDREvent(const Event* event) const;
   time_t GPStoLocal(time_t gps) const;
 
+  std::map<uint16_t, uint16_t> SidTranslation;
   u16 currentTID;  
   STT* stt;
 };
