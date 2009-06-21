@@ -33,13 +33,11 @@
 struct Table 
 {
   Table(void);
-  Table(u16 p, u8 t, u16 tt);
-  Table(const Table& arg);
-  const Table& operator= (const Table& arg);
-  
+
   u16 pid;
   u8  tid;
   u16 table_type;
+  u32 number_bytes;
 };
 
 

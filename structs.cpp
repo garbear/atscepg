@@ -31,39 +31,9 @@ Table::Table(void)
   pid = 0; 
   tid = 0; 
   table_type = 0;
+  number_bytes = 0;
 }
 
-
-//----------------------------------------------------------------------------
-
-Table::Table(u16 p, u8 t, u16 tt) 
-{ 
-  pid = p; 
-  tid = t; 
-  table_type = tt;
-}
-
-
-//----------------------------------------------------------------------------
-
-Table::Table(const Table& arg) 
-{ 
-  pid = arg.pid; 
-  tid = arg.tid; 
-  table_type = arg.table_type; 
-}
-
-
-//----------------------------------------------------------------------------
-
-const Table& Table::operator= (const Table& arg) 
-{ 
-  pid = arg.pid; 
-  tid = arg.tid; 
-  table_type = arg.table_type; 
-  return *this;
-}
-  
 
 //////////////////////////////////////////////////////////////////////////////
 

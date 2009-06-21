@@ -156,8 +156,9 @@ void MGT::Parse(const u8* data, int length)
     tables[i].pid = ((d[2] & 0x1F) << 8) | d[3];
     tables[i].tid = TableTypeToTID(tableType);  
     
-    //u8  table_type_version_number = d[4] & 0x1F; 
-    //u32 number_bytes              = get_u32( d+5 );
+    //u8  table_type_version_number = d[4] & 0x1F;         
+    tables[i].number_bytes = get_u32(d+5);
+    
     u16 table_type_descriptors_length = ((d[9] & 0x0F) << 8) | d[10];
 
     d += 11 + table_type_descriptors_length;

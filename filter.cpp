@@ -331,7 +331,10 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   for (u8 k = 0; k < mgt->NumberOfTables(); k++)
   {
     const Table* t = mgt->GetTable(k);
-    dprint(L_DBG, "Table TID: 0x%02X, PID: 0x%04X", t->tid, t->pid);
+    dprint(L_MGT, "Table ID: 0x%02X, PID: 0x%04X, Bytes: %d", t->tid, t->pid, t->number_bytes);
+    if (t->number_bytes == 0)
+      continue;
+
     switch (t->tid)
     {   
       case 0xCC: // ETT 
