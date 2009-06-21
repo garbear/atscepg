@@ -18,6 +18,7 @@
  */
 
 #include <stdarg.h>
+#include <algorithm>
 
 #include <vdr/plugin.h>
 #include <vdr/filter.h>
@@ -202,7 +203,8 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
-      if (gotVCT) return; 
+      if (gotVCT) return;
+      dfprint(L_VCT|L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
       if (ProcessVCT(Data, length)) {
         gotVCT = true;
         Del(0x1FFB, Tid);
@@ -315,8 +317,6 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
       
     if (!mgt->CheckCRC())
       return false;
-
-    //SetMGTVersion(newMGTVersion); //XXX: This should probably be done after we have received all data
   }
   else 
   { 
@@ -331,7 +331,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   for (u8 k = 0; k < mgt->NumberOfTables(); k++)
   {
     const Table* t = mgt->GetTable(k);
-    
+    dprint(L_DBG, "Table TID: 0x%02X, PID: 0x%04X", t->tid, t->pid);
     switch (t->tid)
     {   
       case 0xCC: // ETT 
@@ -346,14 +346,17 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
       break; 
 
       case 0xCB: // EIT
+      {
         dfprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
-          
-        for (size_t i = 0; i < channelSIDs.size(); i++)
+        
+        std::list<uint16_t>::const_iterator itr;
+        for(itr = channelSIDs.begin(); itr != channelSIDs.end(); itr++)
         {
-          u32 v = (((u32) channelSIDs[i]) << 16) | t->pid;
+          u32 v = (((u32) *itr) << 16) | t->pid;
           eitPids.push_back(v);
           Add(t->pid, t->tid);
         }
+      }
       break;
       
       case 0xCA: // RRT
@@ -374,8 +377,6 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 
 bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
 {
-  dfprint(L_VCT|L_MSG, "Received VCT.");
-
   VCT vct(data, length);
   if (!vct.CheckCRC())
     return false;
@@ -385,9 +386,14 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
   
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
-    channelSIDs.push_back( vct.GetChannel(i)->Sid() );
+    dfprint(L_EIT, "  PMT SID: %d --> VCT SID: %d", vct.GetChannel(i)->ProgramNumber(), vct.GetChannel(i)->Sid());
+    if (vct.GetChannel(i)->HasEit())
+      channelSIDs.push_back( vct.GetChannel(i)->Sid() );
   }
   
+  channelSIDs.sort();
+  channelSIDs.unique();
+   
   return true;
 }
 
@@ -400,20 +406,17 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
   u32 val = (((u32) sid) << 16) | Pid;
   
   // Check if we are expecting this EIT              
-  std::list<uint32_t>::iterator itr;
-  for(itr = eitPids.begin(); itr != eitPids.end() && val != *itr; itr++) { /* do nothing */ } 
+  std::list<uint32_t>::iterator itr = find(eitPids.begin(), eitPids.end(), val);
     
   if (itr == eitPids.end()) // We have already seen or are not expecting this EIT
   {
-    bool found = false;
-    for (size_t i = 0; i < channelSIDs.size() && !found; i++) {
-      if (channelSIDs[i] == sid)
-        found = true;
+    std::list<uint16_t>::const_iterator cit = find(channelSIDs.begin(), channelSIDs.end(), sid);
+    
+    if (cit != channelSIDs.end())
+      dfprint(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [Already seen]", sid, Pid );
+    else {
+      dfprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: 0x%04X)", sid, Pid );
     }
-    if (found)
-      dfprint(L_EIT, "Received EIT (SID: %d PID: %d) [Already seen]", sid, Pid );
-    else  
-      dfprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: %d)", sid, Pid );
   }  
   else // Add events to schedule 
   {
@@ -421,7 +424,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     if (!eit.CheckCRC())
       return false;
 
-    dfprint(L_EIT, "Received EIT (SID: %d PID: %d) [%d left]", sid, Pid , eitPids.size() );
+    dfprint(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [%d left]", sid, Pid , eitPids.size() );
     eitPids.erase(itr);
     Del(Pid, 0xCB);
     
@@ -456,8 +459,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
 {
   u16 eid = ETT::ExtractEventID(data);
     
-  std::list<uint16_t>::iterator itr;
-  for(itr = ettEIDs.begin(); itr != ettEIDs.end() && eid != *itr; itr++) { /* do nothing */ }
+  std::list<uint16_t>::iterator itr = find(ettEIDs.begin(), ettEIDs.end(), eid);
     
   if (itr == ettEIDs.end()) 
   {

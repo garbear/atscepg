@@ -135,6 +135,7 @@ AtscChannel::AtscChannel(void)
   majorChannelNumber = 0;
   minorChannelNumber = 0;
   sid = 0;
+  hasEit = true;
 }
 
 

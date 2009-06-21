@@ -81,6 +81,7 @@ public:
   u16 MinorNumber(void) const { return minorChannelNumber; }
   int Sid(void) const { return sid; }
   int ProgramNumber(void) const { return channel.Sid(); }
+  bool HasEit(void) const { return hasEit; }
   const char* LongName(void) const  { return channel.Name(); }
   const char* ShortName(void) const { return channel.ShortName(); }
   cChannel* VDRChannel(void) { return &channel; }
@@ -93,6 +94,7 @@ public:
   void SetLongName(const char* n) { channel.SetName(n, channel.ShortName(), ""); }
   void SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs[][MAXLANGCODE2]);
   void SetNumber(int Number) { channel.SetNumber(Number); }
+  void SetHasEit(bool he) { hasEit = he; }
   
 private:
   cChannel channel;
@@ -100,6 +102,7 @@ private:
   u16 majorChannelNumber;
   u16 minorChannelNumber;
   u16 sid; // Not the same as VDR's channel sid
+  bool hasEit;
 };
 
 

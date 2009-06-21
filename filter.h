@@ -77,7 +77,7 @@ private:
   
   VDRInterface vdrInterface;
   
-  std::vector<u16> channelSIDs;
+  std::list<uint16_t> channelSIDs;
 
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;

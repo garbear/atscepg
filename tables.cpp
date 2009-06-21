@@ -308,8 +308,11 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
     //XXX: one_part_number only appies under certain conditions...
          
     u1  hide_guide           = (d[26] & 0x02) >> 1;    
-    u8  service_type         = (d[27] & 0x3F);
     */
+    
+    u8  service_type = (d[27] & 0x3F);
+    if (service_type == 0x04) // Data channel: no EIT
+      channels[i]->SetHasEit(false);
     
     u16 program_number = get_u16(d+24); // Corresponds to SID in PMT
     u16 sid = get_u16(d+28);
