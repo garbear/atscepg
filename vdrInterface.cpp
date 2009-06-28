@@ -69,6 +69,8 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
       {
         dprint(L_VDR, "Old event: id %d (sid: %d, tid: %d, ver: %d)", e->event_id, eit.SourceID() , eit.TableID(), e->version_number);
         dprint(L_VDR, "      was: id %d (sid: ?, tid: %d, ver: %d)", pEvent->EventID(), pEvent->TableID(), pEvent->Version());
+        
+        pEvent->SetEventID(e->event_id);
         pEvent->SetSeen();
         
         if (pEvent->Version() < e->version_number)

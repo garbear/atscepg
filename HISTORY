@@ -64,12 +64,18 @@ VDR Plugin 'atscepg' Revision History
 - Added missing virtual to cATSCScanner's destructor
 
 
-2009-??-??: Development Version
+2009-06-28: Version 0.3.0
 
 - Added support for long channel names.
 - Added channel numbering script.
 - VCT descriptors no longer parsed multiple times.
 - Proper conversion to local time.
-
+- More resilient to corrupted data.
+- Now using proper source id values (matches the PMT).
+- VDR's automatic PID update will now work for ATSC channels.
+- Added support for multiple ATSC devices.
+- Fixed memory leak in VCT descriptor parsing.
+- Fixed segfault when "number" script was missing.
+- Added support for multiple audio PIDs and language codes.
 
 

@@ -28,7 +28,7 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-static const char* VERSION        = "0.2.0-hg";
+static const char* VERSION        = "0.3.0";
 static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char* MAINMENUENTRY  =  NULL; 
 
@@ -77,7 +77,7 @@ cPluginAtscepg::cPluginAtscepg(void)
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
-  SetLogType(L_DEFAULT | L_DBG);
+  SetLogType(L_DEFAULT);
 
   lastChannel = -1;
   modATSC = 0;
@@ -123,12 +123,11 @@ bool cPluginAtscepg::Initialize(void)
   // Initialize any background activities the plugin shall perform.
   
 #if VDRVERSNUM < 10700
-  int value = 8;
+  modATSC = MapToDriver(8, ModulationValues);
 #else
-  int value = 10;
+  modATSC = MapToDriver(10, ModulationValues);
 #endif
-  modATSC = MapToDriver(value, ModulationValues);
-  
+
   return true;
 }
 

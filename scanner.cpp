@@ -1,4 +1,3 @@
-#include <stdarg.h>
 /*
  * Copyright (C) 2006-2009 Alex Lasnier <alex@fepg.org>
  *
@@ -17,6 +16,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+
+#include <stdarg.h>
 
 #include <vdr/channels.h>
 #include <vdr/device.h>
