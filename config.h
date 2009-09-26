@@ -17,17 +17,37 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __ATSCCONFIG_H
-#define __ATSCCONFIG_H
+#ifndef __ATSC_CONFIG_H
+#define __ATSC_CONFIG_H
 
 
-struct sATSCConfig 
+///////////////////////////////////////////////////////////////////////////////
+
+
+class cATSCConfig
 {
+public:
+  cATSCConfig(void);
+ ~cATSCConfig();
+ 
+  bool SetupParse(const char* Name, const char* Value);
+  
   //int setTime;
+  int logType;
+  int logConsole;
+  int logFile;
+  int logSyslog;
+  char* logFileName;
 };
 
-extern sATSCConfig config;
+
+///////////////////////////////////////////////////////////////////////////////
 
 
+extern cATSCConfig config;
 
-#endif //__ATSCCONFIG_H
+
+///////////////////////////////////////////////////////////////////////////////
+
+
+#endif //__ATSC_CONFIG_H

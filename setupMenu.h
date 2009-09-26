@@ -25,16 +25,23 @@
 
 class cATSCSetupMenu : public cMenuSetupPage 
 {
-private:
-  //int  newSetTime;
-  
+public:
+  cATSCSetupMenu(void);
+
 protected:
   virtual void Store(void);
   virtual eOSState ProcessKey(eKeys key);
   
-public:
-  cATSCSetupMenu(void);
+  void AddCategory(const char *Title);
+  void AddEmptyLine(void);  
+
+private:
   cOsdItem* scan;
+  //int  newSetTime;
+  int newLogConsole;
+  int newLogFile;
+  int newLogSyslog;
+  char newLogFileName[128];
 };
 
 

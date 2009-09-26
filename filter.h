@@ -83,10 +83,10 @@ private:
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
   
-#ifdef AE_DEBUG
-  void dfprint(uint16_t type, const char* msg, ...);
+#ifdef AE_ENABLE_LOG
+  void dfprint(LogType type, const char* msg, ...);
 #else
-  void dfprint(uint16_t type, const char* msg, ...) { }
+  void dfprint(LogType type, const char* msg, ...) { }
 #endif
 };
 

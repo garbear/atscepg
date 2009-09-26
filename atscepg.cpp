@@ -28,11 +28,11 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-static const char* VERSION        = "0.3.0";
+static const char* VERSION        = "0.3.0-hg";
 static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char* MAINMENUENTRY  =  NULL; 
 
-sATSCConfig config;
+//cATSCConfig config;
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -77,11 +77,8 @@ cPluginAtscepg::cPluginAtscepg(void)
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
   
-  SetLogType(L_DEFAULT);
-
   lastChannel = -1;
   modATSC = 0;
-  //config.setTime  = 0;
   
   for (int i=0; i<MAXDEVICES; i++)
     filters[i] = NULL;
@@ -214,11 +211,7 @@ cMenuSetupPage *cPluginAtscepg::SetupMenu(void)
 bool cPluginAtscepg::SetupParse(const char *Name, const char *Value)
 {
   // Parse your own setup parameters and store their values.
-  //if (!strcasecmp(Name, "setTime"))  config.setTime = atoi(Value);
-  //else return false;
-  
-  //return true;
-  return false;
+  return config.SetupParse(Name, Value);
 }
 
 

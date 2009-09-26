@@ -115,7 +115,7 @@ void cATSCFilter::SetStatus(bool On)
   {
     if (const cChannel* c = Channel()) {
       if (c->Number())
-        dfprint(L_MSG, "Switched to channel %d", c->Number());
+        dfprint(L_MSG, "Switched to channel %d (%s)", c->Number(), *(c->GetChannelID().ToString()));
       else {
         dfprint(L_DBG, "Channel scan: not activating filter");
         prevTransponder = -1;
@@ -204,7 +204,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
       if (gotVCT) return;
-      dfprint(L_VCT|L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
+      dfprint(L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
       if (ProcessVCT(Data, length)) {
         gotVCT = true;
         Del(0x1FFB, Tid);
@@ -309,7 +309,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 
   if ( ((int)newMGTVersion) != GetMGTVersion())
   {
-    dfprint(L_MSG|L_MGT, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
+    dfprint(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
     if (!mgt)
       mgt = new MGT(data, length);
     else
@@ -320,7 +320,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   }
   else 
   { 
-    dfprint(L_MSG|L_MGT, "Received MGT: same version, no update (%d).", newMGTVersion); 
+    dfprint(L_MSG, "Received MGT: same version, no update (%d).", newMGTVersion); 
     return false;
   }
     
@@ -444,7 +444,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     
   if (eitPids.size() == 0) 
   {
-    dfprint(L_MSG|L_EIT, "Received all EITs.");
+    dfprint(L_MSG, "Received all EITs.");
 
     // Now start looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -483,7 +483,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
     
   if (ettEIDs.size() == 0) 
   {
-    dfprint(L_MSG|L_ETT, "Received all ETTs.");
+    dfprint(L_MSG, "Received all ETTs.");
     dfprint(L_MSG, "Got all event information for this transport stream.");
 
     // Stop looking for ETTs
@@ -520,9 +520,9 @@ void cATSCFilter::SetMGTVersion(uint8_t version)
 
 
 //----------------------------------------------------------------------------
-#ifdef AE_DEBUG
+#ifdef AE_ENABLE_LOG
 
-void cATSCFilter::dfprint(uint16_t type, const char* msg, ...)
+void cATSCFilter::dfprint(LogType type, const char* msg, ...)
 {
   char* output = NULL;
   va_list ap;
