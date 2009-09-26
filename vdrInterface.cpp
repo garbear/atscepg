@@ -73,7 +73,7 @@ bool VDRInterface::AddEventsToSchedule(const EIT& eit)
         pEvent->SetEventID(e->event_id);
         pEvent->SetSeen();
         
-        if (pEvent->Version() < e->version_number)
+        if (pEvent->Version() != e->version_number)
         {
           dprint(L_VDR, "           new version!");
           ToVDREvent(e, pEvent, true);
