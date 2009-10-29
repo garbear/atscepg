@@ -279,19 +279,19 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
   transport_stream_id = table_id_extension;
   numberOfChannels    = data[9];
   channels = new AtscChannel*[numberOfChannels];
+  
+  char nameBuffer[32];
 
   const uchar* d = data + 10;
   for (u8 i = 0; i < numberOfChannels; i++)
   { 
     channels[i] = new AtscChannel();
     
-    //TODO: Proper conversion from UTF-16
-    std::string short_name = "";
-    for (int k=0; k<7; k++) short_name += (d[2*k] << 8) | d[2*k+1]; 
-    channels[i]->SetShortName( short_name.c_str() );
+    Utf16.Convert((const char*)d, 14, nameBuffer, sizeof(nameBuffer));
+    channels[i]->SetShortName(nameBuffer);
     
     channels[i]->SetMajorNumber( (((d[14] & 0x0F) << 8) | (d[15] & 0xFC)) >> 2 );
-    channels[i]->SetMinorNumber(  ((d[15] & 0x03) << 8) | d[16] );
+    channels[i]->SetMinorNumber(  ((d[15] & 0x03) << 8) |  d[16] );
     /*
     u8  modulation_mode      = d[17];
     u32 carrier_frequency    = get_u32( d+18 );

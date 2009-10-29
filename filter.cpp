@@ -419,6 +419,11 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
       dfprint(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [Already seen]", sid, Pid );
     else {
       dfprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: 0x%04X)", sid, Pid );
+      /*
+      EIT eit(data, length);
+      for (u32 i=0; i<eit.NumberOfEvents(); i++) 
+        dfprint(L_EIT, ">> %s", eit.GetEvent(i)->TitleText());
+      */
     }
   }  
   else // Add events to schedule 

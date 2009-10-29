@@ -17,7 +17,63 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include "tools.h"
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+Utf16Converter Utf16;
+
+
+//----------------------------------------------------------------------------
+
+Utf16Converter::Utf16Converter(void)
+{
+  const char* toCode = 
+#if VDRVERSNUM >= 10503
+  cCharSetConv::SystemCharacterTable();
+#else
+  "ISO−8859−1";
+#endif  
+  cd = iconv_open(toCode, "UTF-16BE");
+}
+
+
+//----------------------------------------------------------------------------
+
+Utf16Converter::~Utf16Converter()
+{
+  iconv_close(cd);
+}
+
+
+//----------------------------------------------------------------------------
+
+void Utf16Converter::Convert(const char* in, size_t inSize, char* out, size_t outSize)
+{
+  char* inBuf = (char*) in;
+  while (inSize > 0) 
+  {
+    if (iconv(cd, &inBuf, &inSize, &out, &outSize) == size_t(-1))
+    {
+      dprint(L_ERR, "ERROR coverting from UTF-16");
+      //TODO: more errors...
+      if (errno == EILSEQ) { // A character can't be converted
+        inBuf++;
+        inSize--;
+        *out++ = '?';
+        outSize--;
+      }
+      else          
+        break;
+    }
+  }
+  *out = 0;
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
 
 

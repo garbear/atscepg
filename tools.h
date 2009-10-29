@@ -20,10 +20,14 @@
 #ifndef __ATSC_TOOLS_H
 #define __ATSC_TOOLS_H
 
+#include <iconv.h>
 #include <stdint.h>
 #include <stdio.h>
 
 #include "log.h"
+
+
+//////////////////////////////////////////////////////////////////////////////
 
 
 #define u1    bool
@@ -37,5 +41,26 @@ static inline u16 get_u16(const u8* d) { return (d[0] << 8) | d[1]; }
 static inline u32 get_u24(const u8* d) { return (d[0] << 16) | (d[1] << 8) | d[2]; }
 static inline u32 get_u32(const u8* d) { return (d[0] << 24) | (d[1] << 16) | (d[2] << 8) | d[3]; } 
 
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+class Utf16Converter
+{
+public:
+  Utf16Converter(void);
+ ~Utf16Converter();
+ 
+  void Convert(const char* in, size_t inSize, char* out, size_t outSize);
+
+private:
+  iconv_t cd;
+};
+
+
+extern Utf16Converter Utf16;
+
+
+//////////////////////////////////////////////////////////////////////////////
 
 #endif //__ATSC_TOOLS_H
