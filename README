@@ -50,8 +50,8 @@ Notes
 -------------------------------------------------------------------------------
 
 - To receive ATSC broadcasts you must patch VDR with the 
-  supplied patch: "vdr-atsc-0.0.2.diff"       (Works with VDR 1.4.x to 1.6.x)
-                  "vdr-1.7.2-atsc-0.0.3.diff" (Works with VDR 1.7.2 and above)
+  supplied patch: "vdr-atsc-0.0.2.diff"        (Works with VDR 1.4.x to 1.6.x)
+                  "vdr-1.7.10-atsc-0.0.4.diff" (Works with VDR 1.7.2 and above)
 
 
 

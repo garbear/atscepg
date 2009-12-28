@@ -58,7 +58,7 @@ void Utf16Converter::Convert(const char* in, size_t inSize, char* out, size_t ou
   {
     if (iconv(cd, &inBuf, &inSize, &out, &outSize) == size_t(-1))
     {
-      dprint(L_ERR, "ERROR coverting from UTF-16");
+      dprint(L_ERR, "ERROR converting from UTF-16");
       //TODO: more errors...
       if (errno == EILSEQ) { // A character can't be converted
         inBuf++;
