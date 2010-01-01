@@ -45,8 +45,8 @@ DEFINES += -D_GNU_SOURCE -DPLUGIN_NAME_I18N='"$(PLUGIN)"'
 
 ### The object files (add further files here):
 
-OBJS = $(PLUGIN).o config.o filter.o tables.o types.o huffman.o log.o \
-                   descriptors.o vdrInterface.o setupMenu.o \
+OBJS = $(PLUGIN).o config.o devices.o filter.o tables.o types.o huffman.o \
+                   log.o descriptors.o vdrInterface.o setupMenu.o \
                    tools.o scanner.o structs.o
 
 ### Implicit rules:

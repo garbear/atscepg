@@ -17,13 +17,10 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <sys/ioctl.h>
-#include <linux/dvb/frontend.h>
-
 #include <vdr/plugin.h>
 #include <vdr/status.h>
 
-#include "filter.h"
+#include "devices.h"
 #include "config.h"
 #include "setupMenu.h"
 
@@ -35,8 +32,6 @@ static const char* VERSION        = "0.3.0-hg";
 static const char* DESCRIPTION    = "Adds event info for ATSC broadcasts";
 static const char* MAINMENUENTRY  =  NULL; 
 
-//cATSCConfig config;
-
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -44,7 +39,7 @@ static const char* MAINMENUENTRY  =  NULL;
 class cPluginAtscepg : public cPlugin
 {
 private:
-  cATSCFilter* filters[MAXDEVICES];
+
 
 public:
   cPluginAtscepg(void);
@@ -77,9 +72,6 @@ cPluginAtscepg::cPluginAtscepg(void)
   // Initialize any member variables here.
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
-  
-  for (int i=0; i<MAXDEVICES; i++)
-    filters[i] = NULL;
 }
 
 
@@ -88,8 +80,6 @@ cPluginAtscepg::cPluginAtscepg(void)
 cPluginAtscepg::~cPluginAtscepg()
 {
   // Clean up after yourself!
-  for (int i=0; i<MAXDEVICES; i++)
-    delete filters[i];
 }
 
 
@@ -116,6 +106,7 @@ bool cPluginAtscepg::ProcessArgs(int argc, char *argv[])
 bool cPluginAtscepg::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
+  AtscDevices.Initialize();
   return true;
 }
 
@@ -125,29 +116,7 @@ bool cPluginAtscepg::Initialize(void)
 bool cPluginAtscepg::Start(void)
 {
   // Start any background activities the plugin shall perform.
-  
-  int numDev = 0;
-  int n = cDevice::NumDevices();
-  for (int i=0; i<n; i++) 
-  {
-    cString dev = cString::sprintf("/dev/dvb/adapter%d/frontend%d", i, 0);
-    int fe = open(dev, O_RDONLY | O_NONBLOCK);
-    if (fe < 0)
-      continue;
-
-    struct dvb_frontend_info frontendInfo;
-    if (ioctl(fe, FE_GET_INFO, &frontendInfo) >= 0)
-      if (frontendInfo.type == FE_ATSC) 
-      {
-        dprint(L_MSG, "Found ATSC device: %s", frontendInfo.name);
-        numDev++;
-        filters[i] = new cATSCFilter(numDev);
-        filters[i]->Attach(cDevice::GetDevice(i));
-      }
-  }
-  
-  dprint(L_MSG, "Found %d ATSC device%s", numDev, numDev==1?"":"s");
-  
+  AtscDevices.StartFilters();
   return true;
 }
 
@@ -157,6 +126,7 @@ bool cPluginAtscepg::Start(void)
 void cPluginAtscepg::Stop(void)
 {
   // Stop any background activities the plugin shall perform.
+  AtscDevices.StopFilters();
 }
 
 

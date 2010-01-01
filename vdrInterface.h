@@ -23,6 +23,7 @@
 #include <map>
 
 #include  <vdr/channels.h>
+#include  <vdr/epg.h>
 
 #include "tables.h"
 #include "tools.h"
