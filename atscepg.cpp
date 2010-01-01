@@ -44,8 +44,6 @@ static const char* MAINMENUENTRY  =  NULL;
 class cPluginAtscepg : public cPlugin
 {
 private:
-  int lastChannel;
-  int modATSC;
   cATSCFilter* filters[MAXDEVICES];
 
 public:
@@ -79,9 +77,6 @@ cPluginAtscepg::cPluginAtscepg(void)
   // Initialize any member variables here.
   // DON'T DO ANYTHING ELSE THAT MAY HAVE SIDE EFFECTS, REQUIRE GLOBAL
   // VDR OBJECTS TO EXIST OR PRODUCE ANY OUTPUT!
-  
-  lastChannel = -1;
-  modATSC = 0;
   
   for (int i=0; i<MAXDEVICES; i++)
     filters[i] = NULL;
@@ -121,13 +116,6 @@ bool cPluginAtscepg::ProcessArgs(int argc, char *argv[])
 bool cPluginAtscepg::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  
-#if VDRVERSNUM < 10700
-  modATSC = MapToDriver(8, ModulationValues);
-#else
-  modATSC = MapToDriver(10, ModulationValues);
-#endif
-
   return true;
 }
 
