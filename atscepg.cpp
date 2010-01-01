@@ -17,6 +17,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/ioctl.h>
+#include <linux/dvb/frontend.h>
+
 #include <vdr/plugin.h>
 #include <vdr/status.h>
 
@@ -139,16 +142,23 @@ bool cPluginAtscepg::Start(void)
   int n = cDevice::NumDevices();
   for (int i=0; i<n; i++) 
   {
-    cDevice* d = cDevice::GetDevice(i);
-    if (d && d->ProvidesSource(cSource::stTerr)) // This could also mean DVB-T...
-    {
-      numDev++;
-      filters[i] = new cATSCFilter(numDev);
-      filters[i]->Attach(d);
-    }
+    cString dev = cString::sprintf("/dev/dvb/adapter%d/frontend%d", i, 0);
+    int fe = open(dev, O_RDONLY | O_NONBLOCK);
+    if (fe < 0)
+      continue;
+
+    struct dvb_frontend_info frontendInfo;
+    if (ioctl(fe, FE_GET_INFO, &frontendInfo) >= 0)
+      if (frontendInfo.type == FE_ATSC) 
+      {
+        dprint(L_MSG, "Found ATSC device: %s", frontendInfo.name);
+        numDev++;
+        filters[i] = new cATSCFilter(numDev);
+        filters[i]->Attach(cDevice::GetDevice(i));
+      }
   }
   
-  dprint(L_MSG, "Found %d ATSC device(s)", numDev);
+  dprint(L_MSG, "Found %d ATSC device%s", numDev, numDev==1?"":"s");
   
   return true;
 }
