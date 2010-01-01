@@ -21,8 +21,9 @@
 #define __ATSC_SCANNER_H
 
 
-#include <vdr/osdbase.h>
+#include <vdr/device.h>
 #include <vdr/filter.h>
+#include <vdr/osdbase.h>
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -49,10 +50,13 @@ private:
   
   cCondWait condWait;
   bool gotVCT;
+  bool needsUpdate;
+  bool devSelection;
   int currentFrequency;
   const char* dir;
   char* numberCmd;
   FILE* file;
+  cDevice* device;
 };
 
 

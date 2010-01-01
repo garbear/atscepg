@@ -24,6 +24,7 @@
 #include <vdr/plugin.h>
 
 #include "scanner.h"
+#include "devices.h"
 #include "tools.h"
 #include "tables.h"
 #include "structs.h"
@@ -53,10 +54,25 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   asprintf(&numberCmd, "%s/number", dir);
   
   file = NULL;
+  device = NULL;
   currentFrequency = 0;
+  devSelection = false;
+  needsUpdate = false;
   
+  if (AtscDevices.NumDevices() > 1) 
+  {
+    devSelection = true;
+    cOsdMenu::Add(new cOsdItem("Select a device:", osUnknown, false));
+    int n = AtscDevices.NumDevices();
+    for (int i=0; i<n; i++)
+      cOsdMenu::Add(new cOsdItem(AtscDevices.GetName(i)));
+  }
+  else {
+    device = AtscDevices.GetDevice(0);
+    Start();
+  }
+
   Display();
-  Start(); 
 }
 
 
@@ -84,13 +100,6 @@ void cATSCScanner::Action(void)
   if (file == NULL) AddLine("Could not open output file.");
    
   cChannel* c = new cChannel();
-  SetTransponderData(c, 0);
-
-#if VDRVERSNUM < 10500  
-  cDevice* device = cDevice::GetDevice(c);
-#else
-  cDevice* device = cDevice::GetDevice(c, -1, false);
-#endif
 
   if (device == NULL) {
     AddLine("No ATSC device found");
@@ -99,8 +108,6 @@ void cATSCScanner::Action(void)
   {
     for (uint32_t i=0; i<NUM_FREQ && Running(); i++)
     {
-      delete c; 
-      c = new cChannel();
       SetTransponderData(c, ATSCFrequencies[i]);
       currentFrequency = ATSCFrequencies[i];
 
@@ -199,12 +206,23 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
   if (state == osUnknown)
   {
     state = osContinue;
-    
+
     switch (Key)
     {
       case kBack:
         state = osBack;
         break;
+        
+      case kOk:
+        if (devSelection) {
+          device = AtscDevices.GetDevice(Current()-1);
+          devSelection = false;
+          Clear();
+          Display();
+          Start();
+        }
+        break;        
+        
       case kRed:
         if (Running()) {
           condWait.Signal(); // If we are waiting for a VCT, stop.
@@ -215,6 +233,14 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
         else
           state = osBack;
         break;
+        
+      case kNone:
+        if (needsUpdate) {
+          Display();
+          needsUpdate = false;
+        }
+      break;
+       
       default:
         break;    
     }
@@ -239,7 +265,7 @@ void cATSCScanner::AddLine(const char* Text, ...)
 
   cOsdMenu::Add(item);
   CursorDown();
-  Display();
+  needsUpdate = true;
 }
 
 
@@ -250,7 +276,7 @@ void cATSCScanner::UpdateLastLine(const char* Text)
   char* buffer = NULL;
   asprintf(&buffer, "%s\t%s", Last()->Text(), Text);
   Last()->SetText(buffer, false); // false, so we don't need to free(buffer)
-  Display();
+  needsUpdate = true;
 }
 
 

@@ -71,7 +71,10 @@ void cAtscDevices::Initialize(void)
       }
   }
   
-  dprint(L_MSG, "Found %d ATSC device%s", numDevices, numDevices==1?"":"s");
+  if (numDevices)
+    dprint(L_MSG, "Found %d ATSC device%s", numDevices, numDevices==1?"":"s");
+  else
+    dprint(L_ERR, "ERROR: No ATSC devices found.");
 }
 
 

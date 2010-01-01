@@ -37,8 +37,8 @@ public:
   void StartFilters(void);
   void StopFilters(void);
   int NumDevices(void) const { return numDevices; }
-  cDevice* GetDevice(int i) { return (i<numDevices) ? devices[i]->device : NULL; }
-  const char* GetName(int i) { return (i<numDevices) ? devices[i]->name : NULL; }
+  cDevice* GetDevice(int i) { return (i>=0 && i<numDevices) ? devices[i]->device : NULL; }
+  const char* GetName(int i) { return (i>=0 && i<numDevices) ? devices[i]->name : NULL; }
 
 private:  
   class DeviceInfo {
