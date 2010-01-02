@@ -69,6 +69,7 @@ void cAtscDevices::Initialize(void)
         devices[numDevices] = new DeviceInfo(numDevices+1, cDevice::GetDevice(i), frontendInfo.name);
         numDevices++;
       }
+    close(fe);
   }
   
   if (numDevices)
