@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2009 Alex Lasnier <alex@fepg.org>
+ * Copyright (C) 2006-2010 Alex Lasnier <alex@fepg.org>
  *
  * This file is part of ATSC EPG
  *
