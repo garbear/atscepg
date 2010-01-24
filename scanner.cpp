@@ -28,6 +28,7 @@
 #include "tools.h"
 #include "tables.h"
 #include "structs.h"
+#include "frequencies.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -54,22 +55,24 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   asprintf(&numberCmd, "%s/number", dir);
   
   file = NULL;
-  device = NULL;
+  deviceNum = 0;
+  modulation = 0;
   currentFrequency = 0;
-  devSelection = false;
+  devSelection = true;
   needsUpdate = false;
   
-  if (AtscDevices.NumDevices() > 1) 
+  if (AtscDevices.NumDevices() == 0) {
+    devSelection = false;
+    AddLine("No ATSC device found");
+  }
+  else
   {
-    devSelection = true;
-    cOsdMenu::Add(new cOsdItem("Select a device:", osUnknown, false));
     int n = AtscDevices.NumDevices();
     for (int i=0; i<n; i++)
-      cOsdMenu::Add(new cOsdItem(AtscDevices.GetName(i)));
-  }
-  else {
-    device = AtscDevices.GetDevice(0);
-    Start();
+      deviceNames[i] = AtscDevices.GetName(i);
+    cOsdMenu::Add(new cMenuEditStraItem("Device", &deviceNum, n, deviceNames));
+    cOsdMenu::Add(new cMenuEditStraItem("Modulation", &modulation, NUM_FREQ_TYPES, Frequencies_Name));
+    cOsdMenu::Add(new cOsdItem("Start scan..."));
   }
 
   Display();
@@ -100,18 +103,21 @@ void cATSCScanner::Action(void)
   if (file == NULL) AddLine("Could not open output file.");
    
   cChannel* c = new cChannel();
-
+  cDevice* device = AtscDevices.GetDevice(deviceNum);
+  const int* frequencies = Frequencies_List[modulation];
+  unsigned int frequenciesNum = Frequencies_Size[modulation];
+  
   if (device == NULL) {
     AddLine("No ATSC device found");
   }
   else
   {
-    for (uint32_t i=0; i<NUM_FREQ && Running(); i++)
+    for (uint32_t i=0; i<frequenciesNum && Running(); i++)
     {
-      SetTransponderData(c, ATSCFrequencies[i]);
-      currentFrequency = ATSCFrequencies[i];
+      SetTransponderData(c, frequencies[i]);
+      currentFrequency = frequencies[i];
 
-      AddLine("Tuning:\t%d Hz", ATSCFrequencies[i]);
+      AddLine("Tuning:\t%d Hz", frequencies[i]);
       
       device->SwitchChannel(c, false);
       bool lock = device->HasLock(TIMEOUT); 
@@ -187,12 +193,16 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 
 void cATSCScanner::SetTransponderData(cChannel* c, int frequency)
 {
-#if VDRVERSNUM < 10700      
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, 7, 999, 999, 999, 999, 999);
-#elif VDRVERSNUM < 10702
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999, 0, 0);
+#if VDRVERSNUM < 10700
+  int m = (modulation == 0) ? 7 : MapToDriver(256, ModulationValues);
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, m, 999, 999, 999, 999, 999);
 #else
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 6000000, MapToDriver(10, ModulationValues), 999, 999, 999, 999, 999);
+  int m = MapToDriver((modulation == 0) ? 10 : 256, ModulationValues);
+#  if VDRVERSNUM < 10702
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, m, 999, 999, 999, 999, 999, 0, 0);
+#  else
+  c->SetTerrTransponderData(cSource::stTerr, frequency, 6000000, m, 999, 999, 999, 999, 999);
+#  endif
 #endif 
 }
 
@@ -214,8 +224,7 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
         break;
         
       case kOk:
-        if (devSelection) {
-          device = AtscDevices.GetDevice(Current()-1);
+        if (devSelection && Current() == 2) {
           devSelection = false;
           Clear();
           Display();
