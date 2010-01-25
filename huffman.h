@@ -29,9 +29,6 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-#define uint unsigned int
-
-
 std::string ATSCHuffman1toString(const u8* compressed, u32 size, u32 table);
 
 std::string Uncompressed(const u8* data, u8 number_bytes, u8 mode);  
