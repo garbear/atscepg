@@ -20,6 +20,8 @@
 #include <sys/ioctl.h>
 #include <linux/dvb/frontend.h>
 
+#include <vdr/plugin.h>
+
 #include "devices.h"
 
 
@@ -51,6 +53,13 @@ cAtscDevices::~cAtscDevices()
 
 //----------------------------------------------------------------------------
 
+struct HDHomeRunDeviceList_v1_0 {
+  int numDevices;
+  cDevice** devices;
+  const char** names;
+};
+
+
 void cAtscDevices::Initialize(void)
 {
   int n = cDevice::NumDevices();
@@ -70,6 +79,20 @@ void cAtscDevices::Initialize(void)
         numDevices++;
       }
     close(fe);
+  }
+  
+  if (cPlugin* plugin = cPluginManager::GetPlugin("hdhomerun"))
+  {
+    dprint(L_MSG, "Looking for HDHomeRun devices.");
+    HDHomeRunDeviceList_v1_0 dl;
+    dl.numDevices = 0;
+    plugin->Service("GetDevices-v1.0", &dl);
+    for (int i=0; i<dl.numDevices && numDevices < MAXDEVICES; i++)
+    {
+      dprint(L_MSG, "Found HDHomeRun device %s.", dl.names[i]);
+      devices[numDevices] = new DeviceInfo(numDevices+1, dl.devices[i], dl.names[i]);
+      numDevices++;
+    } 
   }
   
   if (numDevices)
