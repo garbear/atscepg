@@ -82,12 +82,6 @@ private:
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
-  
-#ifdef AE_ENABLE_LOG
-  void dfprint(LogType type, const char* msg, ...);
-#else
-  void dfprint(LogType type, const char* msg, ...) { }
-#endif
 };
 
 

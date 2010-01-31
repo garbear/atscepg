@@ -34,11 +34,19 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifdef AE_ENABLE_LOG
+#define F_LOG(T, s, ...) Logger.Printf(T, "(F:%d) "s, fNum, ##__VA_ARGS__)
+#else
+#define F_LOG(T, s, ...) 
+#endif
+
+///////////////////////////////////////////////////////////////////////////////
+
 
 cATSCFilter::cATSCFilter(int num)
 {
   fNum = num;
-  dfprint(L_DBGV, "Created.");
+  F_LOG(L_DBGV, "Created.");
   mgt = NULL;
   newMGTVersion = 0;
   gotMGT = false;
@@ -84,7 +92,7 @@ void cATSCFilter::Attach(cDevice* device)
     if (attachedDevice) 
     {
       attachedDevice->AttachFilter(this);
-      dfprint(L_DBGV, "Attached.");
+      F_LOG(L_DBGV, "Attached.");
     }
   }
   
@@ -98,7 +106,7 @@ void cATSCFilter::Detach(void)
   {
     attachedDevice->Detach(this);
     attachedDevice = NULL;
-    dfprint(L_DBGV, "Detached.");
+    F_LOG(L_DBGV, "Detached.");
   }
 }
   
@@ -115,9 +123,9 @@ void cATSCFilter::SetStatus(bool On)
   {
     if (const cChannel* c = Channel()) {
       if (c->Number())
-        dfprint(L_MSG, "Switched to channel %d (%s)", c->Number(), *(c->GetChannelID().ToString()));
+        F_LOG(L_MSG, "Switched to channel %d (%s)", c->Number(), *(c->GetChannelID().ToString()));
       else {
-        dfprint(L_DBG, "Channel scan: not activating filter");
+        F_LOG(L_DBG, "Channel scan: not activating filter");
         prevTransponder = -1;
         cFilter::SetStatus(false);
         return;
@@ -126,14 +134,14 @@ void cATSCFilter::SetStatus(bool On)
 
     if (prevTransponder != Transponder())
     {
-      dfprint(L_DBG, "Different transponder: resetting");
+      F_LOG(L_DBG, "Different transponder: resetting");
       prevTransponder = Transponder();
       ResetFilter();
       cFilter::SetStatus(true);
     }
     else 
     {
-      dfprint(L_DBG, "Same transponder: not resetting");
+      F_LOG(L_DBG, "Same transponder: not resetting");
     }
   }
 }
@@ -175,7 +183,7 @@ void cATSCFilter::ResetFilter(void)
 void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int length)
 {  
   if (length < 15) {
-    dfprint(L_ERR, "Insufficient data length.");
+    F_LOG(L_ERR, "Insufficient data length.");
     return;
   }
   
@@ -204,7 +212,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
     case 0xC9: // VCT-C: Cable Virtual Channel Table
       if (gotVCT) return;
-      dfprint(L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
+      F_LOG(L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
       if (ProcessVCT(Data, length)) {
         gotVCT = true;
         Del(0x1FFB, Tid);
@@ -213,7 +221,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       
     case 0xCA: // RRT: Rating Region Table 
       if (gotRRT) return;
-      dfprint(L_DBG, "Received RRT: Not yet implemented.");
+      F_LOG(L_DBG, "Received RRT: Not yet implemented.");
       //RRT rrt(Data, length);
       gotRRT = true; 
     break; 
@@ -228,25 +236,25 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
-      dfprint(L_MSG, "Received STT.");
+      F_LOG(L_MSG, "Received STT.");
       vdrInterface.UpdateSTT(Data, length);
       lastScanSTT = now;
     break;
       
     case 0xCE: // DET
-      dfprint(L_DBG, "Received DET: Not yet implemented.");
+      F_LOG(L_DBG, "Received DET: Not yet implemented.");
     break;
              
     case 0xD3: // DCC 
-      dfprint(L_DBG, "Received DCC: Not yet implemented.");
+      F_LOG(L_DBG, "Received DCC: Not yet implemented.");
     break;
       
     case 0xD4: // DCCSCT
-      dfprint(L_DBG, "Received DCCSCT: Not yet implemented.");
+      F_LOG(L_DBG, "Received DCCSCT: Not yet implemented.");
     break;
       
     default:
-      dfprint(L_DBG, "Unknown TID: 0x%02X", Tid);
+      F_LOG(L_DBG, "Unknown TID: 0x%02X", Tid);
     break;   
   }
 }
@@ -260,11 +268,11 @@ bool cATSCFilter::ProcessPAT(const uint8_t* data, int length)
   if (!pat.CheckCRCAndParse())
     return false;
 
-  dfprint(L_DBG, "Received PAT.");
+  F_LOG(L_DBG, "Received PAT.");
   SI::PAT::Association assoc;
   for (SI::Loop::Iterator it; pat.associationLoop.getNext(assoc, it); ) 
   {
-    dfprint(L_DBG, "PAT: Found PMT (PID: %d, SID: %d)", assoc.getPid(), assoc.getServiceId());
+    F_LOG(L_DBG, "PAT: Found PMT (PID: %d, SID: %d)", assoc.getPid(), assoc.getServiceId());
     Add(assoc.getPid(), 0x02);
   }
   
@@ -280,22 +288,22 @@ bool cATSCFilter::ProcessPMT(const uint8_t* data, int length)
   if (!pmt.CheckCRCAndParse())
     return false;
   
-  dfprint(L_DBG, "================== PMT ==================");
-  dfprint(L_DBG, "  SID: %d", pmt.getServiceId());
+  F_LOG(L_DBG, "================== PMT ==================");
+  F_LOG(L_DBG, "  SID: %d", pmt.getServiceId());
   
   int numStream=1;
   SI::PMT::Stream stream;
   for (SI::Loop::Iterator it; pmt.streamLoop.getNext(stream, it); ) 
   {
-    dfprint(L_DBG, "  Stream %d --- PID: %d, Stream type: 0x%02X", numStream++, stream.getPid(), stream.getStreamType());
+    F_LOG(L_DBG, "  Stream %d --- PID: %d, Stream type: 0x%02X", numStream++, stream.getPid(), stream.getStreamType());
     SI::Descriptor *d;
     for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); )
     {
-      dfprint(L_DBG, "    Descriptor --- Tag: 0x%02X", d->getDescriptorTag());
+      F_LOG(L_DBG, "    Descriptor --- Tag: 0x%02X", d->getDescriptorTag());
       delete d;
     }
   } 
-  dfprint(L_DBG, "=========================================");
+  F_LOG(L_DBG, "=========================================");
   return true;
 }
 
@@ -309,7 +317,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 
   if ( ((int)newMGTVersion) != GetMGTVersion())
   {
-    dfprint(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
+    F_LOG(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
     if (!mgt)
       mgt = new MGT(data, length);
     else
@@ -320,7 +328,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   }
   else 
   { 
-    dfprint(L_MSG, "Received MGT: same version, no update (%d).", newMGTVersion); 
+    F_LOG(L_MSG, "Received MGT: same version, no update (%d).", newMGTVersion); 
     return false;
   }
     
@@ -339,18 +347,18 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
     {   
       case 0xCC: // ETT 
         if (t->table_type == 0x0004) { // Channel ETT
-          dfprint(L_MGT, "MGT: Found channel ETT PID");
+          F_LOG(L_MGT, "MGT: Found channel ETT PID");
           // Usually provides a short description, not very useful.
         }  
         else { // Event ETT 
-          dfprint(L_MGT, "MGT: Found ETT PID: %d", t->pid);
+          F_LOG(L_MGT, "MGT: Found ETT PID: %d", t->pid);
           ettPids.push_back(t->pid); // Save these for after we have the EITs
         }
       break; 
 
       case 0xCB: // EIT
       {
-        dfprint(L_MGT, "MGT: Found EIT PID: %d", t->pid);
+        F_LOG(L_MGT, "MGT: Found EIT PID: %d", t->pid);
         
         std::list<uint16_t>::const_iterator itr;
         for(itr = channelSIDs.begin(); itr != channelSIDs.end(); itr++)
@@ -368,7 +376,7 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
       break;
       
       default:
-        dfprint(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
+        F_LOG(L_MGT, "MGT: Unhandled table id 0x%02X", t->tid);
     }
   }
   
@@ -389,7 +397,7 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
   
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
-    dfprint(L_EIT, "  PMT SID: %d --> VCT SID: %d", vct.GetChannel(i)->ProgramNumber(), vct.GetChannel(i)->Sid());
+    F_LOG(L_EIT, "  PMT SID: %d --> VCT SID: %d", vct.GetChannel(i)->ProgramNumber(), vct.GetChannel(i)->Sid());
     if (vct.GetChannel(i)->HasEit())
       channelSIDs.push_back( vct.GetChannel(i)->Sid() );
   }
@@ -416,13 +424,13 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     std::list<uint16_t>::const_iterator cit = find(channelSIDs.begin(), channelSIDs.end(), sid);
     
     if (cit != channelSIDs.end())
-      dfprint(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [Already seen]", sid, Pid );
+      F_LOG(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [Already seen]", sid, Pid );
     else {
-      dfprint(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: 0x%04X)", sid, Pid );
+      F_LOG(L_EIT, "Received EIT not referred to in MGT (SID: %d PID: 0x%04X)", sid, Pid );
       /*
       EIT eit(data, length);
       for (u32 i=0; i<eit.NumberOfEvents(); i++) 
-        dfprint(L_EIT, ">> %s", eit.GetEvent(i)->TitleText());
+        F_LOG(L_EIT, ">> %s", eit.GetEvent(i)->TitleText());
       */
     }
   }  
@@ -432,7 +440,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     if (!eit.CheckCRC())
       return false;
 
-    dfprint(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [%d left]", sid, Pid , eitPids.size() );
+    F_LOG(L_EIT, "Received EIT (SID: %d PID: 0x%04X) [%d left]", sid, Pid , eitPids.size() );
     eitPids.erase(itr);
     Del(Pid, 0xCB);
     
@@ -449,7 +457,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     
   if (eitPids.size() == 0) 
   {
-    dfprint(L_MSG, "Received all EITs.");
+    F_LOG(L_MSG, "Received all EITs.");
 
     // Now start looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -471,7 +479,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
     
   if (itr == ettEIDs.end()) 
   {
-    dfprint(L_ETT, "Unexpected ETT (EID: %d)", eid);
+    F_LOG(L_ETT, "Unexpected ETT (EID: %d)", eid);
   }
   else
   {
@@ -479,7 +487,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
     if (!ett.CheckCRC())
       return false;
 
-    dfprint(L_ETT, "Received ETT (EID: %d)", eid);
+    F_LOG(L_ETT, "Received ETT (EID: %d)", eid);
     ettEIDs.erase(itr);
     // We cannot Del(Pid, Tid) because we do not know how many ETTs 
     // we will get per PID. Or maybe there is a way to know this...
@@ -488,8 +496,8 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
     
   if (ettEIDs.size() == 0) 
   {
-    dfprint(L_MSG, "Received all ETTs.");
-    dfprint(L_MSG, "Got all event information for this transport stream.");
+    F_LOG(L_MSG, "Received all ETTs.");
+    F_LOG(L_MSG, "Got all event information for this transport stream.");
 
     // Stop looking for ETTs
     for(std::list<uint16_t>::iterator i = ettPids.begin(); i != ettPids.end(); i++) {
@@ -523,23 +531,6 @@ void cATSCFilter::SetMGTVersion(uint8_t version)
   MGTVersions[Transponder()] = version;
 }
 
-
-//----------------------------------------------------------------------------
-#ifdef AE_ENABLE_LOG
-
-void cATSCFilter::dfprint(LogType type, const char* msg, ...)
-{
-  char* output = NULL;
-  va_list ap;
-  va_start(ap, msg);
-  vasprintf(&output, msg, ap);
-  va_end(ap);
-  
-  dprint(type, "(F:%d) %s", fNum, output);
-  free(output);
-}
-
-#endif
 
 //////////////////////////////////////////////////////////////////////////////
 
