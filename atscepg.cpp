@@ -106,7 +106,6 @@ bool cPluginAtscepg::ProcessArgs(int argc, char *argv[])
 bool cPluginAtscepg::Initialize(void)
 {
   // Initialize any background activities the plugin shall perform.
-  AtscDevices.Initialize();
   return true;
 }
 
@@ -116,6 +115,7 @@ bool cPluginAtscepg::Initialize(void)
 bool cPluginAtscepg::Start(void)
 {
   // Start any background activities the plugin shall perform.
+  AtscDevices.Initialize();
   AtscDevices.StartFilters();
   return true;
 }
