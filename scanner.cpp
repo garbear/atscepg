@@ -107,6 +107,10 @@ void cATSCScanner::Action(void)
   const int* frequencies = Frequencies_List[modulation];
   unsigned int frequenciesNum = Frequencies_Size[modulation];
   
+  int prevChan = -1;
+  if (device == cDevice::ActualDevice())
+    prevChan = cDevice::CurrentChannel();
+
   if (device == NULL) {
     AddLine("No ATSC device found");
   }
@@ -140,7 +144,11 @@ void cATSCScanner::Action(void)
   if (file) {
     AddLine("Saved to file: %s", FILE_NAME);  
     fclose(file);
-  }  
+  }
+  
+  if (prevChan > 0)
+    Channels.SwitchTo(prevChan);
+  
   dprint(L_DBGV, "ATSC Scanner thread ended.");
 }
 
