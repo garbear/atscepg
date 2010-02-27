@@ -1,0 +1,74 @@
+diff -Nur vdr-1.7.12.orig/dvbdevice.c vdr-1.7.12/dvbdevice.c
+--- vdr-1.7.12.orig/dvbdevice.c	2010-01-04 09:06:24.000000000 -0500
++++ vdr-1.7.12/dvbdevice.c	2010-02-27 11:50:08.000000000 -0500
+@@ -24,6 +24,8 @@
+ #define DVBC_LOCK_TIMEOUT  2000 //ms
+ #define DVBT_TUNE_TIMEOUT  9000 //ms
+ #define DVBT_LOCK_TIMEOUT  2000 //ms
++#define ATSC_TUNE_TIMEOUT  9000 //ms
++#define ATSC_LOCK_TIMEOUT  2000 //ms
+ 
+ // --- cDvbTuner -------------------------------------------------------------
+ 
+@@ -280,6 +282,16 @@
+      tuneTimeout = DVBT_TUNE_TIMEOUT;
+      lockTimeout = DVBT_LOCK_TIMEOUT;
+      }
++  else if (frontendType == SYS_ATSC) {
++     // ATSC
++     SETCMD(DTV_DELIVERY_SYSTEM, frontendType);
++     SETCMD(DTV_FREQUENCY, FrequencyToHz(channel.Frequency()));
++     SETCMD(DTV_INVERSION, channel.Inversion());
++     SETCMD(DTV_MODULATION, channel.Modulation());
++     
++     tuneTimeout = ATSC_TUNE_TIMEOUT;
++     lockTimeout = ATSC_LOCK_TIMEOUT;     
++     }
+   else {
+      esyslog("ERROR: attempt to set channel with unknown DVB frontend type");
+      return false;
+@@ -598,9 +610,9 @@
+ {
+   int type = Source & cSource::st_Mask;
+   return type == cSource::stNone
+-      || type == cSource::stCable && (frontendType == SYS_DVBC_ANNEX_AC || frontendType == SYS_DVBC_ANNEX_B)
++      || type == cSource::stCable && (frontendType == SYS_DVBC_ANNEX_AC || frontendType == SYS_DVBC_ANNEX_B || frontendType == SYS_ATSC)
+       || type == cSource::stSat   && (frontendType == SYS_DVBS || frontendType == SYS_DVBS2)
+-      || type == cSource::stTerr  && (frontendType == SYS_DVBT);
++      || type == cSource::stTerr  && (frontendType == SYS_DVBT || frontendType == SYS_ATSC);
+ }
+ 
+ bool cDvbDevice::ProvidesTransponder(const cChannel *Channel) const
+diff -Nur vdr-1.7.12.orig/pat.c vdr-1.7.12/pat.c
+--- vdr-1.7.12.orig/pat.c	2010-01-01 10:40:05.000000000 -0500
++++ vdr-1.7.12/pat.c	2010-02-27 11:55:11.000000000 -0500
+@@ -447,6 +447,29 @@
+                          }
+                       }
+                       break;
++              case 0x81: // ATSC AC-3
++                      {
++                      char lang[MAXLANGCODE1] = { 0 };
++                      SI::Descriptor *d;
++                      for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); ) {
++                          switch (d->getDescriptorTag()) {
++                            case SI::ISO639LanguageDescriptorTag: {
++                                 SI::ISO639LanguageDescriptor *ld = (SI::ISO639LanguageDescriptor *)d;
++                                 strn0cpy(lang, I18nNormalizeLanguageCode(ld->languageCode), MAXLANGCODE1);
++                                 }
++                                 break;
++                            default: ;
++                            }
++                          delete d;
++                          }
++                      if (NumDpids < MAXDPIDS) {
++                         Dpids[NumDpids] = esPid;
++                         strn0cpy(DLangs[NumDpids], lang, MAXLANGCODE1);
++                         NumDpids++;
++                         }
++                      ProcessCaDescriptors = true;
++                      }
++                      break;
+               default: ;//printf("PID: %5d %5d %2d %3d %3d\n", pmt.getServiceId(), stream.getPid(), stream.getStreamType(), pmt.getVersionNumber(), Channel->Number());
+               }
+             if (ProcessCaDescriptors) {

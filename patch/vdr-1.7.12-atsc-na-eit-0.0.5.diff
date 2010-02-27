@@ -1,0 +1,41 @@
+diff -Nur vdr-1.7.12.orig/dvbdevice.c vdr-1.7.12/dvbdevice.c
+--- vdr-1.7.12.orig/dvbdevice.c	2010-01-04 09:06:24.000000000 -0500
++++ vdr-1.7.12/dvbdevice.c	2010-02-27 11:50:08.000000000 -0500
+@@ -24,6 +24,8 @@
+ #define DVBC_LOCK_TIMEOUT  2000 //ms
+ #define DVBT_TUNE_TIMEOUT  9000 //ms
+ #define DVBT_LOCK_TIMEOUT  2000 //ms
++#define ATSC_TUNE_TIMEOUT  9000 //ms
++#define ATSC_LOCK_TIMEOUT  2000 //ms
+ 
+ // --- cDvbTuner -------------------------------------------------------------
+ 
+@@ -280,6 +282,16 @@
+      tuneTimeout = DVBT_TUNE_TIMEOUT;
+      lockTimeout = DVBT_LOCK_TIMEOUT;
+      }
++  else if (frontendType == SYS_ATSC) {
++     // ATSC
++     SETCMD(DTV_DELIVERY_SYSTEM, frontendType);
++     SETCMD(DTV_FREQUENCY, FrequencyToHz(channel.Frequency()));
++     SETCMD(DTV_INVERSION, channel.Inversion());
++     SETCMD(DTV_MODULATION, channel.Modulation());
++     
++     tuneTimeout = ATSC_TUNE_TIMEOUT;
++     lockTimeout = ATSC_LOCK_TIMEOUT;     
++     }
+   else {
+      esyslog("ERROR: attempt to set channel with unknown DVB frontend type");
+      return false;
+@@ -598,9 +610,9 @@
+ {
+   int type = Source & cSource::st_Mask;
+   return type == cSource::stNone
+-      || type == cSource::stCable && (frontendType == SYS_DVBC_ANNEX_AC || frontendType == SYS_DVBC_ANNEX_B)
++      || type == cSource::stCable && (frontendType == SYS_DVBC_ANNEX_AC || frontendType == SYS_DVBC_ANNEX_B || frontendType == SYS_ATSC)
+       || type == cSource::stSat   && (frontendType == SYS_DVBS || frontendType == SYS_DVBS2)
+-      || type == cSource::stTerr  && (frontendType == SYS_DVBT);
++      || type == cSource::stTerr  && (frontendType == SYS_DVBT || frontendType == SYS_ATSC);
+ }
+ 
+ bool cDvbDevice::ProvidesTransponder(const cChannel *Channel) const
