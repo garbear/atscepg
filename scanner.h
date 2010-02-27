@@ -50,7 +50,6 @@ private:
   
   cCondWait condWait;
   bool gotVCT;
-  bool needsUpdate;
   bool devSelection;
   int currentFrequency;
   const char* dir;

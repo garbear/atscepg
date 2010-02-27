@@ -59,7 +59,6 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   modulation = 0;
   currentFrequency = 0;
   devSelection = true;
-  needsUpdate = false;
   
   if (AtscDevices.NumDevices() == 0) {
     devSelection = false;
@@ -250,13 +249,6 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
         else
           state = osBack;
         break;
-        
-      case kNone:
-        if (needsUpdate) {
-          Display();
-          needsUpdate = false;
-        }
-      break;
        
       default:
         break;    
@@ -282,7 +274,6 @@ void cATSCScanner::AddLine(const char* Text, ...)
 
   cOsdMenu::Add(item);
   CursorDown();
-  needsUpdate = true;
 }
 
 
@@ -293,7 +284,7 @@ void cATSCScanner::UpdateLastLine(const char* Text)
   char* buffer = NULL;
   asprintf(&buffer, "%s\t%s", Last()->Text(), Text);
   Last()->SetText(buffer, false); // false, so we don't need to free(buffer)
-  needsUpdate = true;
+  DisplayCurrent(true);
 }
 
 
