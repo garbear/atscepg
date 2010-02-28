@@ -93,13 +93,14 @@ cATSCScanner::~cATSCScanner(void)
 
 void cATSCScanner::Action(void)
 {
-  dprint(L_DBGV, "ATSC Scanner thread started.");
+  dprint(L_DBG, "ATSC Scanner thread started.");
   
   char* fn = NULL;
   asprintf(&fn, "%s/%s", dir, FILE_NAME);
   file = fopen(fn, "w");
   free(fn);
-  if (file == NULL) AddLine("Could not open output file.");
+  if (file == NULL)
+    AddLine("Could not open output file.");
    
   cChannel* c = new cChannel();
   cDevice* device = AtscDevices.GetDevice(deviceNum);
@@ -126,16 +127,21 @@ void cATSCScanner::Action(void)
       bool lock = device->HasLock(TIMEOUT); 
       if (!lock) {
         UpdateLastLine("Failed");
+        dprint(L_DBG, "Tuning: %d Hz (Failed)", frequencies[i]);
         continue; 
       }
   
       UpdateLastLine("Success");
-      
+      dprint(L_DBG, "Tuning: %d Hz (Success)", frequencies[i]);
+       
       gotVCT = false; 
       device->AttachFilter(this);
       condWait.Wait(VCT_TIMEOUT); // Let the filter do its thing
       device->Detach(this);
-      if (!gotVCT) AddLine("\tNo channels found");
+      if (!gotVCT) {
+        AddLine("\tNo channels found");
+        dprint(L_DBG, "No channels found");
+      }
     }
   }
   
@@ -148,7 +154,7 @@ void cATSCScanner::Action(void)
   if (prevChan > 0)
     Channels.SwitchTo(prevChan);
   
-  dprint(L_DBGV, "ATSC Scanner thread ended.");
+  dprint(L_DBG, "ATSC Scanner thread ended.");
 }
 
 
@@ -164,11 +170,13 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
   
   if (!vct.CheckCRC()) {
     AddLine("\tReceived VCT with errors, check signal.");
+    dprint(L_DBG, "Received VCT-%c with errors", Tid==0xC8?'T':'C');
     condWait.Signal();
     return;
   }
   
   AddLine("\tReceived VCT: found %d channels.", vct.NumberOfChannels());
+  dprint(L_DBG, "Received VCT-%c found %d channels.", Tid==0xC8?'T':'C', vct.NumberOfChannels());
 
   for (u32 i=0; i<vct.NumberOfChannels(); i++)
   {
@@ -177,6 +185,7 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
     SetTransponderData(ch->VDRChannel(), currentFrequency);
   
     AddLine("\t%d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
+    dprint(L_DBG, "  %d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
     
     if (file)
     {
@@ -244,6 +253,7 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
           condWait.Signal(); // If we are waiting for a VCT, stop.
           Cancel(TIMEOUT+500);
           AddLine("Scan cancelled");
+          dprint(L_DBG, "Scan cancelled");
           state = osContinue;
         }
         else
@@ -281,6 +291,9 @@ void cATSCScanner::AddLine(const char* Text, ...)
 
 void cATSCScanner::UpdateLastLine(const char* Text)
 {
+  if (!Last())
+    return;
+
   char* buffer = NULL;
   asprintf(&buffer, "%s\t%s", Last()->Text(), Text);
   Last()->SetText(buffer, false); // false, so we don't need to free(buffer)
