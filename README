@@ -51,11 +51,11 @@ Notes
 
 To receive ATSC broadcasts you must patch VDR with the supplied patch:
 
-  vdr-1.7.12-atsc-0.0.5.diff        : Works with VDR 1.7.12 and above.
+  vdr-1.7.13-atsc-0.1.0.diff        : Works with VDR 1.7.13 and above.
   
-  vdr-1.7.12-atsc-na-eit-0.0.5.diff : Same as above, to be use if the NA-EIT
+  vdr-1.7.13-atsc-tuning-0.1.0.diff : Same as above, to be use if the NA-EIT
                                       patch has been (or will be) applied.
-                                      
-This patch is NOT required when using only HDHomeRun devices.
+
+Make sure to update your sources.conf with the patched version.
 
 

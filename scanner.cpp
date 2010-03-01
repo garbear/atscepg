@@ -19,6 +19,7 @@
 
 #include <stdarg.h>
 
+#include <linux/dvb/frontend.h>
 #include <vdr/channels.h>
 #include <vdr/device.h>
 #include <vdr/plugin.h>
@@ -118,9 +119,9 @@ void cATSCScanner::Action(void)
   {
     for (uint32_t i=0; i<frequenciesNum && Running(); i++)
     {
-      SetTransponderData(c, frequencies[i]);
       currentFrequency = frequencies[i];
-
+      SetTransponderData(c);
+      
       AddLine("Tuning:\t%d Hz", frequencies[i]);
       
       device->SwitchChannel(c, false);
@@ -182,7 +183,7 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
   {
     AtscChannel* ch = (AtscChannel*) vct.GetChannel(i);
     
-    SetTransponderData(ch->VDRChannel(), currentFrequency);
+    SetTransponderData(ch->VDRChannel());
   
     AddLine("\t%d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
     dprint(L_DBG, "  %d.%d  %s", ch->MajorNumber(), ch->MinorNumber(), ch->ShortName());
@@ -207,19 +208,12 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 
 //----------------------------------------------------------------------------
 
-void cATSCScanner::SetTransponderData(cChannel* c, int frequency)
+void cATSCScanner::SetTransponderData(cChannel* c)
 {
-#if VDRVERSNUM < 10700
-  int m = (modulation == 0) ? 7 : MapToDriver(256, ModulationValues);
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, m, 999, 999, 999, 999, 999);
-#else
-  int m = MapToDriver((modulation == 0) ? 10 : 256, ModulationValues);
-#  if VDRVERSNUM < 10702
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 999, m, 999, 999, 999, 999, 999, 0, 0);
-#  else
-  c->SetTerrTransponderData(cSource::stTerr, frequency, 6000000, m, 999, 999, 999, 999, 999);
-#  endif
-#endif 
+  cDvbTransponderParameters dtp;
+  dtp.SetModulation((modulation == 0) ? VSB_8 : QAM_256);
+  dtp.SetInversion(INVERSION_AUTO);    
+  c->SetTransponderData(cSource::stAtsc, currentFrequency, 0, dtp.ToString('A'));
 }
 
 

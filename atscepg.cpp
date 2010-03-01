@@ -25,6 +25,11 @@
 #include "setupMenu.h"
 
 
+#if VDRVERSNUM < 10713
+#error This version of ATSC EPG requires VDR 1.7.13 or above.
+#endif
+
+
 //////////////////////////////////////////////////////////////////////////////
 
 

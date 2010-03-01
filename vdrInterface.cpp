@@ -170,12 +170,10 @@ bool VDRInterface::AddDescription(const ETT& ett)
 
 cChannel* VDRInterface::GetChannel(u16 source_id, u8 table_id) const
 {
-  //int source = (table_id == 0xC9) ? cSource::stCable : cSource::stTerr;
-  int source = cSource::stTerr;
   cChannel* channel = NULL;
   int sid = GetVDRSid(source_id);
   if (sid != -1) {
-    tChannelID channelIDSearch(source, 0x00, currentTID, sid);
+    tChannelID channelIDSearch(cSource::stAtsc, 0x00, currentTID, sid);
     channel = Channels.GetByChannelID(channelIDSearch, true, true);
   }
   
