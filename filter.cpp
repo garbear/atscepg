@@ -25,6 +25,7 @@
 #include <libsi/descriptor.h>
 
 #include "filter.h"
+#include "filterManager.h"
 #include "tables.h"
 #include "tools.h"
 
@@ -50,6 +51,8 @@ cATSCFilter::cATSCFilter(int num)
 {
   fNum = num;
   F_LOG(L_DBGV, "Created.");
+  FilterManager.AddFilter(this);
+  
   newMGTVersion = 0;
   gotMGT = false;
   gotVCT = false;
@@ -107,7 +110,11 @@ void cATSCFilter::SetStatus(bool On)
       F_LOG(L_DBG, "Different transponder: resetting");
       prevTransponder = Transponder();
       ResetFilter();
-      cFilter::SetStatus(true);
+      
+      if (FilterManager.Set(this, Transponder()))
+        cFilter::SetStatus(true);
+      else
+        F_LOG(L_DBG, "This transponder is being updated by another filter.");
     }
     else 
     {
@@ -130,7 +137,8 @@ void cATSCFilter::ResetFilter(void)
   lastScanSTT = 0;
 
   channelSIDs.clear();
-
+  FilterManager.Reset(this);
+  
   eitPids.clear();
   ettEIDs.clear();
   ettPids.clear();
@@ -275,14 +283,15 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
 {
   // Do we have a newer version?
   newMGTVersion = PSIPTable::ExtractVersion(data);
-
-  if (int(newMGTVersion) == GetMGTVersion())
+  int oldMGTVersion = FilterManager.GetMgtVersion(Transponder());
+  
+  if (int(newMGTVersion) == oldMGTVersion)
   {
     F_LOG(L_MSG, "Received MGT: same version, no update (%d).", newMGTVersion); 
     return false;  
   }
   
-  F_LOG(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
+  F_LOG(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", oldMGTVersion, newMGTVersion);
   MGT mgt(data, length);
   if (!mgt.CheckCRC())
     return false;
@@ -459,31 +468,11 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
       Del(*i, 0xCC);
     }
     
-    SetMGTVersion(newMGTVersion);
+    FilterManager.SetMgtVersion(Transponder(), newMGTVersion);
     gotMGT = false; // Start looking for new versions
   }
   
   return true; 
-}
-
-
-//----------------------------------------------------------------------------
-
-int cATSCFilter::GetMGTVersion(void)
-{
-  std::map<int,uint8_t>::const_iterator itr = MGTVersions.find(Transponder());
-  if (itr == MGTVersions.end()) // Key not found
-    return -1;
-
-  return itr->second;
-}
-
-
-//----------------------------------------------------------------------------
-
-void cATSCFilter::SetMGTVersion(uint8_t version)
-{
-  MGTVersions[Transponder()] = version;
 }
 
 

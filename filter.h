@@ -20,8 +20,6 @@
 #ifndef __ATSCFILTER_H
 #define __ATSCFILTER_H
 
-#include <vector>
-#include <map> 
 #include <list>
 
 #include <vdr/filter.h>
@@ -51,13 +49,10 @@ private:
   bool ProcessEIT(const uint8_t* data, int length, uint16_t Pid);
   bool ProcessETT(const uint8_t* data, int length);
   
-  int GetMGTVersion(void);
-  void SetMGTVersion(uint8_t version);
   cChannel* GetChannel(uint16_t sid) const;
   
   void ResetFilter(void);
-  
-  std::map<int, uint8_t> MGTVersions; // Should be shared between instances?
+
   uint8_t newMGTVersion;
 
   time_t lastScanMGT;

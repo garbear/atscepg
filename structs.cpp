@@ -149,8 +149,7 @@ SidTranslator::~SidTranslator()
 
 void SidTranslator::Update(VCT* vct)
 {
-  if (map)
-    Clear();
+  Clear();
 
   size = vct->NumberOfChannels();
   map = new SidPair[size];
