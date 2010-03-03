@@ -106,6 +106,32 @@ private:
 
 //////////////////////////////////////////////////////////////////////////////
 
+class VCT;
+
+class SidTranslator
+{
+public:
+  SidTranslator(void);
+ ~SidTranslator();
+ 
+  void Update(VCT* vct);
+  uint16_t GetPmtSid(uint16_t vctSid) const;
+  
+private:
+  void Clear(void);
+  
+  struct SidPair {
+    uint16_t vctSid; 
+    uint16_t pmtSid;
+  };
+  
+  SidPair* map;
+  int size;
+};
+
+
+//////////////////////////////////////////////////////////////////////////////
+
 
 struct Stream
 {
@@ -113,7 +139,6 @@ struct Stream
   
   u8  stream_type;
   u16 elementary_PID;
-
   char ISO_639_language_code[4];
 };
 

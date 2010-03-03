@@ -49,8 +49,7 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   dprint(L_DBGV, "ATSC Scanner Created.");
   SetHelp("Cancel");
   
-  Set(0x1FFB, 0xC8); // VCT-T
-  Set(0x1FFB, 0xC9); // VCT-C
+  Set(0x1FFB, 0xC8, 0xFE); // VCT-T/C
   
   dir = cPlugin::ConfigDirectory("atscepg");
   asprintf(&numberCmd, "%s/number", dir);

@@ -20,8 +20,6 @@
 #ifndef __VDRINTERFACE_H
 #define __VDRINTERFACE_H
 
-#include <map>
-
 #include  <vdr/channels.h>
 #include  <vdr/epg.h>
 
@@ -36,30 +34,17 @@
 class VDRInterface
 {
 public:
-  VDRInterface();
- ~VDRInterface() { delete stt; }
-
-  bool AddEventsToSchedule(const EIT& eit);
-  void AddChannels(const VCT& vct);
-  bool AddDescription(const ETT& ett);
-
-  void UpdateSTT(const u8* data, int length); 
-  void UpdateTID(u16 tid) { currentTID = tid; }
+  static bool AddEvents(cChannel* channel, const EIT& eit);
+  static bool AddDescription(cChannel* channel, const ETT& ett);
 
 private:
-  cChannel* GetChannel(u16 s_id, u8 table_id) const;
-  int GetVDRSid(u16 sourceId) const;
-  void ToVDREvent(const Event* event, cEvent* vdrEvent, bool setId) const;
-  cEvent* CreateVDREvent(const Event* event) const;
-  time_t GPStoLocal(time_t gps) const;
-
-  std::map<uint16_t, uint16_t> SidTranslation;
-  u16 currentTID;  
-  STT* stt;
+  static void ToVDREvent(const Event* event, cEvent* vdrEvent);
+  static cEvent* CreateVDREvent(const Event* event);
+  static time_t GPStoLocal(time_t gps); 
 };
 
 
-//////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 
 #endif //__VDRINTERFACE_H

@@ -20,10 +20,7 @@
 #include <stdarg.h>
 #include <algorithm>
 
-#include <vdr/plugin.h>
 #include <vdr/filter.h>
-#include <vdr/device.h>
-
 #include <libsi/section.h>
 #include <libsi/descriptor.h>
 
@@ -34,11 +31,17 @@
 
 ///////////////////////////////////////////////////////////////////////////////
 
+
 #ifdef AE_ENABLE_LOG
 #define F_LOG(T, s, ...) Logger.Printf(T, "(F:%d) "s, fNum, ##__VA_ARGS__)
 #else
 #define F_LOG(T, s, ...) 
 #endif
+
+
+#define MGT_SCAN_DELAY 60 
+#define STT_SCAN_DELAY 60 
+
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -47,7 +50,6 @@ cATSCFilter::cATSCFilter(int num)
 {
   fNum = num;
   F_LOG(L_DBGV, "Created.");
-  mgt = NULL;
   newMGTVersion = 0;
   gotMGT = false;
   gotVCT = false;
@@ -57,16 +59,14 @@ cATSCFilter::cATSCFilter(int num)
   lastScanSTT = 0;
   prevTransponder = -1;
  
-  attachedDevice = NULL;
+  //attachedDevice = NULL;
   
   Set(0x1FFB, 0xC7); // MGT
 
   // Set(0x1FFB, 0xCA); // RRT
   // Set(0x1FFB, 0xCD); // SST
-
   // Set(0x1FFB, 0xCE); // DET
   // Set(0x1FFB, 0xCF); // DST
-  
   // Set(0x1FFB, 0xD3); // DCCT
   // Set(0x1FFB, 0xD4); // DCCSCT
 }
@@ -76,40 +76,10 @@ cATSCFilter::cATSCFilter(int num)
 
 cATSCFilter::~cATSCFilter()
 {
-  Detach();
-  delete mgt;
+
 }
 
 
-//----------------------------------------------------------------------------
-
-void cATSCFilter::Attach(cDevice* device)
-{
-  if (!attachedDevice) 
-  {
-    attachedDevice = device;
-
-    if (attachedDevice) 
-    {
-      attachedDevice->AttachFilter(this);
-      F_LOG(L_DBGV, "Attached.");
-    }
-  }
-  
-}
-
-//----------------------------------------------------------------------------
-
-void cATSCFilter::Detach(void)
-{
-  if (attachedDevice) 
-  {
-    attachedDevice->Detach(this);
-    attachedDevice = NULL;
-    F_LOG(L_DBGV, "Detached.");
-  }
-}
-  
 //----------------------------------------------------------------------------
 
 void cATSCFilter::SetStatus(bool On)
@@ -166,19 +136,11 @@ void cATSCFilter::ResetFilter(void)
   ettPids.clear();
     
   // Add(0x0000, 0x00); // PAT
-  Add(0x1FFB, 0xC8); // VCT-T
-  Add(0x1FFB, 0xC9); // VCT-C
-      
-  delete mgt;
-  mgt = NULL;
+  Add(0x1FFB, 0xC8, 0xFE); // VCT-T/C
 }
 
 
 //----------------------------------------------------------------------------
-
-#define MGT_SCAN_DELAY 60 
-#define STT_SCAN_DELAY 60 
-
 
 void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int length)
 {  
@@ -237,7 +199,6 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     case 0xCD: // STT: System Time Table  
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       F_LOG(L_MSG, "Received STT.");
-      vdrInterface.UpdateSTT(Data, length);
       lastScanSTT = now;
     break;
       
@@ -315,30 +276,24 @@ bool cATSCFilter::ProcessMGT(const uint8_t* data, int length)
   // Do we have a newer version?
   newMGTVersion = PSIPTable::ExtractVersion(data);
 
-  if ( ((int)newMGTVersion) != GetMGTVersion())
+  if (int(newMGTVersion) == GetMGTVersion())
   {
-    F_LOG(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
-    if (!mgt)
-      mgt = new MGT(data, length);
-    else
-      mgt->Update(data, length);
-      
-    if (!mgt->CheckCRC())
-      return false;
-  }
-  else 
-  { 
     F_LOG(L_MSG, "Received MGT: same version, no update (%d).", newMGTVersion); 
-    return false;
+    return false;  
   }
+  
+  F_LOG(L_MSG, "Received MGT: new/imcomplete version, updating (%d -> %d).", GetMGTVersion(), newMGTVersion);
+  MGT mgt(data, length);
+  if (!mgt.CheckCRC())
+    return false;
     
   eitPids.clear();  
   ettEIDs.clear();  
   ettPids.clear();
       
-  for (u8 k = 0; k < mgt->NumberOfTables(); k++)
+  for (u8 k = 0; k < mgt.NumberOfTables(); k++)
   {
-    const Table* t = mgt->GetTable(k);
+    const Table* t = mgt.GetTable(k);
     dprint(L_MGT, "Table ID: 0x%02X, PID: 0x%04X, Bytes: %d", t->tid, t->pid, t->number_bytes);
     if (t->number_bytes == 0)
       continue;
@@ -392,9 +347,9 @@ bool cATSCFilter::ProcessVCT(const uint8_t* data, int length)
   if (!vct.CheckCRC())
     return false;
 
-  vdrInterface.UpdateTID(vct.TID());
-  vdrInterface.AddChannels(vct);
-  
+  currentTID = vct.TID();
+  sidTranslator.Update(&vct);
+    
   for (u32 i=0; i<vct.NumberOfChannels(); i++) 
   {
     F_LOG(L_EIT, "  PMT SID: %d --> VCT SID: %d", vct.GetChannel(i)->ProgramNumber(), vct.GetChannel(i)->Sid());
@@ -444,7 +399,7 @@ bool cATSCFilter::ProcessEIT(const uint8_t* data, int length, uint16_t Pid)
     eitPids.erase(itr);
     Del(Pid, 0xCB);
     
-    vdrInterface.AddEventsToSchedule(eit);
+    VDRInterface::AddEvents(GetChannel(eit.SourceID()), eit);
       
     // Now look for ETTs for these events
     for (u32 i=0; i<eit.NumberOfEvents(); i++)
@@ -491,7 +446,7 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
     ettEIDs.erase(itr);
     // We cannot Del(Pid, Tid) because we do not know how many ETTs 
     // we will get per PID. Or maybe there is a way to know this...
-    vdrInterface.AddDescription(ett);
+    VDRInterface::AddDescription(GetChannel(ett.SourceID()), ett);
   }
     
   if (ettEIDs.size() == 0) 
@@ -529,6 +484,22 @@ int cATSCFilter::GetMGTVersion(void)
 void cATSCFilter::SetMGTVersion(uint8_t version)
 {
   MGTVersions[Transponder()] = version;
+}
+
+
+//----------------------------------------------------------------------------
+
+cChannel* cATSCFilter::GetChannel(uint16_t sid) const
+{
+  cChannel* channel = NULL;
+  uint16_t pmtSid = sidTranslator.GetPmtSid(sid);
+  if (pmtSid)
+  {
+    tChannelID channelIDSearch(cSource::stAtsc, 0x00, currentTID, pmtSid);
+    channel = Channels.GetByChannelID(channelIDSearch, true);  
+  }
+  
+  return channel;
 }
 
 

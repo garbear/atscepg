@@ -39,9 +39,6 @@ public:
   cATSCFilter(int num);
   virtual ~cATSCFilter();
   
-  void Attach(cDevice* Device);
-  void Detach(void);
-  
 protected:
   virtual void Process(u_short Pid, u_char Tid, const u_char* Data, int length);
   virtual void SetStatus(bool On);
@@ -56,15 +53,12 @@ private:
   
   int GetMGTVersion(void);
   void SetMGTVersion(uint8_t version);
-
+  cChannel* GetChannel(uint16_t sid) const;
+  
   void ResetFilter(void);
   
   std::map<int, uint8_t> MGTVersions; // Should be shared between instances?
   uint8_t newMGTVersion;
-  
-  cDevice* attachedDevice;
-
-  MGT* mgt;
 
   time_t lastScanMGT;
   time_t lastScanSTT;
@@ -72,16 +66,18 @@ private:
   bool gotMGT;
   bool gotVCT;
   bool gotRRT;
+  
   int fNum;
   int prevTransponder;
-  
-  VDRInterface vdrInterface;
   
   std::list<uint16_t> channelSIDs;
 
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
+  
+  SidTranslator sidTranslator;
+  uint16_t currentTID;
 };
 
 

@@ -21,6 +21,7 @@
 #include <stdlib.h>
 
 #include "structs.h"
+#include "tables.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -122,6 +123,71 @@ void AtscChannel::SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs
 #else  
   channel.SetPids(Vpid, Ppid, Vtype, Apids, ALangs, Dpids, DLangs, Spids, SLangs, 0);
 #endif
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+SidTranslator::SidTranslator(void)
+{
+  map = NULL;
+  size = 0;
+}
+
+
+//----------------------------------------------------------------------------
+
+SidTranslator::~SidTranslator()
+{
+  Clear();
+}
+
+
+//----------------------------------------------------------------------------
+
+
+void SidTranslator::Update(VCT* vct)
+{
+  if (map)
+    Clear();
+
+  size = vct->NumberOfChannels();
+  map = new SidPair[size];
+  
+  for (int i=0; i<size; i++)
+  {
+    const AtscChannel* ch = vct->GetChannel(i);
+    map[i].vctSid = ch->Sid();
+    map[i].pmtSid = ch->ProgramNumber();
+  }
+}
+
+
+//----------------------------------------------------------------------------
+
+
+uint16_t SidTranslator::GetPmtSid(uint16_t sid) const
+{
+  if (!map)
+    return 0;
+  
+  for (int i=0; i<size; i++)
+    if (map[i].vctSid == sid)
+      return map[i].pmtSid;
+      
+  return 0;
+}
+
+
+//----------------------------------------------------------------------------
+
+
+void SidTranslator::Clear(void)
+{
+  size = 0;
+  delete[] map;
+  map = NULL;
 }
 
 

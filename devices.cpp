@@ -107,7 +107,7 @@ void cAtscDevices::Initialize(void)
 void cAtscDevices::StartFilters(void)
 {
   for (int i=0; i<numDevices; i++)
-    devices[i]->filter->Attach(devices[i]->device);
+    devices[i]->device->AttachFilter(devices[i]->filter);
 }
 
 
@@ -116,7 +116,7 @@ void cAtscDevices::StartFilters(void)
 void cAtscDevices::StopFilters(void)
 {
   for (int i=0; i<numDevices; i++)
-    devices[i]->filter->Detach(); 
+    devices[i]->device->Detach(devices[i]->filter);
 }
 
 
