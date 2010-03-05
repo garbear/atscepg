@@ -18,8 +18,11 @@
  */
 
 #include <stdarg.h>
+#include <algorithm>
 
 #include <linux/dvb/frontend.h>
+#include <libsi/section.h>
+#include <libsi/descriptor.h>
 #include <vdr/channels.h>
 #include <vdr/device.h>
 #include <vdr/plugin.h>
@@ -35,9 +38,9 @@
 //////////////////////////////////////////////////////////////////////////////
 
 
-#define TIMEOUT     1000
-#define VCT_TIMEOUT 5000
-#define FILE_NAME   "channels.conf"
+#define TIMEOUT        1000
+#define FILTER_TIMEOUT 5000
+#define FILE_NAME      "channels.conf"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -107,6 +110,11 @@ void cATSCScanner::Action(void)
   const int* frequencies = Frequencies_List[modulation];
   unsigned int frequenciesNum = Frequencies_Size[modulation];
   
+  bool doPMTscan = (modulation == 1);
+  
+  if (doPMTscan)
+    Set(0x0000, 0x00); // Do PAT/PMT scan for cable
+  
   int prevChan = -1;
   if (device == cDevice::ActualDevice())
     prevChan = cDevice::CurrentChannel();
@@ -134,11 +142,15 @@ void cATSCScanner::Action(void)
       UpdateLastLine("Success");
       dprint(L_DBG, "Tuning: %d Hz (Success)", frequencies[i]);
        
-      gotVCT = false; 
+      gotVCT = false;
+      gotPAT = false;
+      gotPMT = doPMTscan ? false : true;
+      
       device->AttachFilter(this);
-      condWait.Wait(VCT_TIMEOUT); // Let the filter do its thing
+      condWait.Wait(FILTER_TIMEOUT); // Let the filter do its thing
       device->Detach(this);
-      if (!gotVCT) {
+      
+      if ((!gotVCT && !doPMTscan) || (!gotVCT && !gotPMT)) {
         AddLine("\tNo channels found");
         dprint(L_DBG, "No channels found");
       }
@@ -161,9 +173,30 @@ void cATSCScanner::Action(void)
 //----------------------------------------------------------------------------
 
 void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Length)
-{ 
-  if (gotVCT) return;
-  
+{
+  switch (Tid)
+  {
+    case 0x00: if (!gotPAT)
+                 ProcessPAT(Data, Length);
+               break;
+    case 0x02: if (ProcessPMT(Data, Length))
+                 cFilter::Del(Pid, 0x02);
+               break;
+    case 0xC8:
+    case 0xC9: if (!gotVCT)
+                 ProcessVCT(Tid, Data, Length);
+               break;
+  }
+
+  if (gotVCT && gotPMT)
+    condWait.Signal(); // We got the VCT don't let the thread wait for nothing!
+}
+
+
+//----------------------------------------------------------------------------
+
+void cATSCScanner::ProcessVCT(u_char Tid, const u_char* Data, int Length)
+{  
   gotVCT = true;
   
   VCT vct(Data, Length);
@@ -199,9 +232,136 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
       else
         fprintf(file, "%s", *chanText);
     }
-  }  
+  }
+}
 
-  condWait.Signal(); // We got the VCT don't let the thread wait for nothing!
+
+//----------------------------------------------------------------------------
+
+void cATSCScanner::ProcessPAT(const u_char* data, int Length)
+{
+  SI::PAT pat(data, false);
+  if (!pat.CheckCRCAndParse())
+    return;
+  
+  tsid = pat.getTransportStreamId();
+  
+  pmtSIDs.clear();
+  int numChan = 0;
+  SI::PAT::Association assoc;
+  for (SI::Loop::Iterator it; pat.associationLoop.getNext(assoc, it); )
+    if (!assoc.isNITPid()) {
+      pmtSIDs.push_back(assoc.getServiceId());
+      cFilter::Add(assoc.getPid(), 0x02);
+      numChan++;
+    }
+  
+  AddLine("\tReceived PAT: found %d channels.", numChan);
+  dprint(L_DBG, "Received PAT: found %d channels.", numChan);
+  
+  gotPAT = true;
+}
+
+//----------------------------------------------------------------------------
+
+bool cATSCScanner::ProcessPMT(const u_char* data, int Length)
+{
+  SI::PMT pmt(data, false);
+  if (!pmt.CheckCRCAndParse())
+    return false;
+  
+  
+  std::list<uint16_t>::iterator itr = find(pmtSIDs.begin(), pmtSIDs.end(), pmt.getServiceId());
+  if (itr == pmtSIDs.end()) // Not found
+    return false;
+  //dprint(L_DBG, "Received PMT for SID %d", pmt.getServiceId());
+  
+  int Vpid  = 0;
+  int Vtype = 0;
+  int Ppid  = 0;
+  int Apids[1] = { 0 };
+  int Spids[1] = { 0 };
+  char ALangs[1][MAXLANGCODE2] = { "" };
+  char SLangs[1][MAXLANGCODE2] = { "" };
+  int Dpids[MAXDPIDS + 1] = { 0 };
+  char DLangs[MAXDPIDS][MAXLANGCODE2] = { "" };
+  int NumDpids = 0;
+  int NumCaIds = 0;
+  int CaIds[MAXCAIDS + 1] = { 0 };
+   
+  SI::PMT::Stream stream;
+  for (SI::Loop::Iterator it; pmt.streamLoop.getNext(stream, it); ) 
+  {
+    int esPid = stream.getPid();
+    switch (stream.getStreamType())
+    {
+      case 0x02:
+      case 0x1B:
+        Vpid = esPid;
+        Ppid = pmt.getPCRPid();
+        Vtype = stream.getStreamType();
+      break;
+      
+      case 0x05:
+      case 0x06:
+      break;
+        
+      case 0x81: {
+        char lang[MAXLANGCODE1] = { 0 };
+        SI::Descriptor *d;
+        for (SI::Loop::Iterator it; (d = stream.streamDescriptors.getNext(it)); ) {
+          switch (d->getDescriptorTag()) {
+            case SI::ISO639LanguageDescriptorTag: {
+              SI::ISO639LanguageDescriptor *ld = (SI::ISO639LanguageDescriptor *)d;
+              strn0cpy(lang, I18nNormalizeLanguageCode(ld->languageCode), MAXLANGCODE1);
+            }
+            break;
+            default: ;
+          }
+          delete d;
+        }
+        if (NumDpids < MAXDPIDS) {
+          Dpids[NumDpids] = esPid;
+          strn0cpy(DLangs[NumDpids], lang, MAXLANGCODE1);
+          NumDpids++;
+        }
+      }
+      break;
+        
+      default:
+        dprint(L_DBG, "PMT unhandled stream type 0x%02X.", stream.getStreamType());
+    }
+          
+    SI::CaDescriptor* d;
+    for (SI::Loop::Iterator it; (d = (SI::CaDescriptor*) stream.streamDescriptors.getNext(it, SI::CaDescriptorTag)); ) 
+    {
+      if (NumCaIds < MAXCAIDS) {
+        int caId = d->getCaType();
+        bool add = true;
+        for (int i = 0; add && i < NumCaIds; i++)
+          if (CaIds[i] == caId)
+            add = false;
+        if (add)    
+          CaIds[NumCaIds++] = caId;
+      }        
+      delete d;
+    }
+  } 
+  
+  cChannel channel;
+  SetTransponderData(&channel);
+  channel.SetId(0, tsid, pmt.getServiceId());
+  channel.SetPids(Vpid, Ppid, Vtype, Apids, ALangs, Dpids, DLangs, Spids, SLangs, 0);
+  channel.SetCaIds(CaIds);
+  if (file)
+    fprintf(file, "%s", *(channel.ToText()));
+    
+  pmtSIDs.erase(itr);
+  if (pmtSIDs.empty()) {
+    //dprint(L_DBG, "Got all PMTs");
+    gotPMT = true;
+  }
+  return true;
 }
 
 

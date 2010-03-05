@@ -20,6 +20,7 @@
 #ifndef __ATSC_SCANNER_H
 #define __ATSC_SCANNER_H
 
+#include <list>
 
 #include <vdr/device.h>
 #include <vdr/filter.h>
@@ -39,17 +40,25 @@ public:
  
 protected:
   virtual void Action(void);
-
+  virtual void Process(u_short Pid, u_char Tid, const u_char *Data, int Length);
+  
 private:
   void AddLine(const char* Text, ...); 
   void UpdateLastLine(const char* Text);
   int Number(uint16_t major, uint16_t minor);
   void SetTransponderData(cChannel* c);
   
-  virtual void Process(u_short Pid, u_char Tid, const u_char *Data, int Length);
+  void ProcessVCT(u_char Tid, const u_char* Data, int Length);
+  void ProcessPAT(const u_char* Data, int Length);
+  bool ProcessPMT(const u_char* Data, int Length);
   
   cCondWait condWait;
+  bool gotPAT;
   bool gotVCT;
+  bool gotPMT;
+  int tsid;
+  std::list<uint16_t> pmtSIDs;
+  
   bool devSelection;
   int currentFrequency;
   const char* dir;
