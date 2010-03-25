@@ -30,8 +30,9 @@ Utf16Converter Utf16;
 //----------------------------------------------------------------------------
 
 Utf16Converter::Utf16Converter(void)
-{ 
-  cd = iconv_open(cCharSetConv::SystemCharacterTable(), "UTF-16BE");
+{
+  const char* to = cCharSetConv::SystemCharacterTable() ? cCharSetConv::SystemCharacterTable() : "UTF-8";
+  cd = iconv_open(to, "UTF-16BE");
 }
 
 
