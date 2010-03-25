@@ -102,8 +102,10 @@ void cATSCScanner::Action(void)
   asprintf(&fn, "%s/%s", dir, FILE_NAME);
   file = fopen(fn, "w");
   free(fn);
-  if (file == NULL)
+  if (!file) {
     AddLine("Could not open output file.");
+    return;
+  }
    
   cChannel* c = new cChannel();
   cDevice* device = AtscDevices.GetDevice(deviceNum);
@@ -119,50 +121,42 @@ void cATSCScanner::Action(void)
   if (device == cDevice::ActualDevice())
     prevChan = cDevice::CurrentChannel();
 
-  if (device == NULL) {
-    AddLine("No ATSC device found");
-  }
-  else
+  for (uint32_t i=0; i<frequenciesNum && Running(); i++)
   {
-    for (uint32_t i=0; i<frequenciesNum && Running(); i++)
-    {
-      currentFrequency = frequencies[i];
-      SetTransponderData(c);
-      
-      AddLine("Tuning:\t%d Hz", frequencies[i]);
-      
-      device->SwitchChannel(c, false);
-      bool lock = device->HasLock(TIMEOUT); 
-      if (!lock) {
-        UpdateLastLine("Failed");
-        dprint(L_DBG, "Tuning: %d Hz (Failed)", frequencies[i]);
-        continue; 
-      }
-  
-      UpdateLastLine("Success");
-      dprint(L_DBG, "Tuning: %d Hz (Success)", frequencies[i]);
-       
-      gotVCT = false;
-      gotPAT = false;
-      gotPMT = doPMTscan ? false : true;
-      
-      device->AttachFilter(this);
-      condWait.Wait(FILTER_TIMEOUT); // Let the filter do its thing
-      device->Detach(this);
-      
-      if ((!gotVCT && !doPMTscan) || (!gotVCT && !gotPMT)) {
-        AddLine("\tNo channels found");
-        dprint(L_DBG, "No channels found");
-      }
+    currentFrequency = frequencies[i];
+    SetTransponderData(c);
+    
+    AddLine("Tuning:\t%d Hz", frequencies[i]);
+    
+    device->SwitchChannel(c, false);
+    bool lock = device->HasLock(TIMEOUT); 
+    if (!lock) {
+      UpdateLastLine("Failed");
+      dprint(L_DBG, "Tuning: %d Hz (Failed)", frequencies[i]);
+      continue; 
     }
-  }
-  
+
+    UpdateLastLine("Success");
+    dprint(L_DBG, "Tuning: %d Hz (Success)", frequencies[i]);
+     
+    gotVCT = false;
+    gotPAT = false;
+    gotPMT = doPMTscan ? false : true;
+    
+    device->AttachFilter(this);
+    condWait.Wait(FILTER_TIMEOUT); // Let the filter do its thing
+    device->Detach(this);
+    
+    if ((!gotVCT && !doPMTscan) || (!gotVCT && !gotPMT)) {
+      AddLine("\tNo channels found");
+      dprint(L_DBG, "No channels found");
+    }
+  }  
   delete c;
-  if (file) {
-    AddLine("Saved to file: %s", FILE_NAME);  
-    fclose(file);
-  }
-  
+
+  AddLine("Saved to file: %s", FILE_NAME);  
+  fclose(file);
+
   if (prevChan > 0)
     Channels.SwitchTo(prevChan);
   
@@ -176,16 +170,19 @@ void cATSCScanner::Process(u_short Pid, u_char Tid, const u_char* Data, int Leng
 {
   switch (Tid)
   {
-    case 0x00: if (!gotPAT)
-                 ProcessPAT(Data, Length);
-               break;
-    case 0x02: if (ProcessPMT(Data, Length))
-                 cFilter::Del(Pid, 0x02);
-               break;
+    case 0x00:
+      if (!gotPAT)
+        ProcessPAT(Data, Length);
+      break;
+    case 0x02:
+      if (ProcessPMT(Data, Length))
+        cFilter::Del(Pid, 0x02);
+      break;
     case 0xC8:
-    case 0xC9: if (!gotVCT)
-                 ProcessVCT(Tid, Data, Length);
-               break;
+    case 0xC9:
+      if (!gotVCT)
+        ProcessVCT(Tid, Data, Length);
+      break;
   }
 
   if (gotVCT && gotPMT)
@@ -269,7 +266,6 @@ bool cATSCScanner::ProcessPMT(const u_char* data, int Length)
   SI::PMT pmt(data, false);
   if (!pmt.CheckCRCAndParse())
     return false;
-  
   
   std::list<uint16_t>::iterator itr = find(pmtSIDs.begin(), pmtSIDs.end(), pmt.getServiceId());
   if (itr == pmtSIDs.end()) // Not found

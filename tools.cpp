@@ -30,14 +30,8 @@ Utf16Converter Utf16;
 //----------------------------------------------------------------------------
 
 Utf16Converter::Utf16Converter(void)
-{
-  const char* toCode = 
-#if VDRVERSNUM >= 10503
-  cCharSetConv::SystemCharacterTable();
-#else
-  "ISO−8859−1";
-#endif  
-  cd = iconv_open(toCode, "UTF-16BE");
+{ 
+  cd = iconv_open(cCharSetConv::SystemCharacterTable(), "UTF-16BE");
 }
 
 

@@ -61,11 +61,8 @@ cATSCFilter::cATSCFilter(int num)
   lastScanMGT = 0;
   lastScanSTT = 0;
   prevTransponder = -1;
- 
-  //attachedDevice = NULL;
   
   Set(0x1FFB, 0xC7); // MGT
-
   // Set(0x1FFB, 0xCA); // RRT
   // Set(0x1FFB, 0xCD); // SST
   // Set(0x1FFB, 0xCE); // DET
@@ -157,8 +154,6 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     return;
   }
   
-  time_t now = time(NULL);
-  
   switch (Tid)
   {
     case 0x00: // PAT
@@ -172,11 +167,14 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
     break;
     
     case 0xC7: // MGT: Master Guide Table
+    {
+      time_t now = time(NULL);
       if (!gotVCT || gotMGT || now - lastScanMGT <= MGT_SCAN_DELAY) return;
       if (ProcessMGT(Data, length)) {
         gotMGT = true;
       }
       lastScanMGT = now;
+    }
     break;
       
     case 0xC8: // VCT-T: Terrestrial Virtual Channel Table
@@ -204,10 +202,13 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       ProcessETT(Data, length);
     break; 
       
-    case 0xCD: // STT: System Time Table  
+    case 0xCD: // STT: System Time Table
+    {
+      time_t now = time(NULL);
       if (now - lastScanSTT <= STT_SCAN_DELAY) return;
       F_LOG(L_MSG, "Received STT.");
       lastScanSTT = now;
+    }
     break;
       
     case 0xCE: // DET
@@ -478,10 +479,10 @@ bool cATSCFilter::ProcessETT(const uint8_t* data, int length)
 
 //----------------------------------------------------------------------------
 
-cChannel* cATSCFilter::GetChannel(uint16_t sid) const
+cChannel* cATSCFilter::GetChannel(uint16_t vctSid) const
 {
   cChannel* channel = NULL;
-  uint16_t pmtSid = sidTranslator.GetPmtSid(sid);
+  uint16_t pmtSid = sidTranslator.GetPmtSid(vctSid);
   if (pmtSid)
   {
     tChannelID channelIDSearch(cSource::stAtsc, 0x00, currentTID, pmtSid);
