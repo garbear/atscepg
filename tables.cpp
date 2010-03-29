@@ -48,43 +48,7 @@ PSIPTable::PSIPTable(void)
 
 PSIPTable::~PSIPTable()
 {
-  DeleteDescriptors();
-}
 
-
-//----------------------------------------------------------------------------
-
-Descriptor* PSIPTable::GetDescriptor(u32 i) const
-{
-  return (i < descriptors.size()) ? descriptors[i] : NULL;
-}
-
-
-//----------------------------------------------------------------------------
-
-void PSIPTable::AddDescriptors(const u8* data, u16 length)
-{ 
-  const u8* dc = data;
-
-  while ( dc < data+length )
-  { 
-    Descriptor* d = Descriptor::CreateDescriptor(dc);
-    if (d) descriptors.push_back( d );
-    dc += dc[1] + 2;
-  }  
-}
-
-
-//----------------------------------------------------------------------------
-
-void PSIPTable::DeleteDescriptors(void)
-{
-  for (u32 i=0; i<descriptors.size(); i++) {
-    delete descriptors[i];
-    descriptors[i] = NULL;
-  }
-  
-  descriptors.clear();
 }
 
 
@@ -110,7 +74,7 @@ void PSIPTable::Update(const u8* data, int length)
 
   crc_passed = SI::CRC32::isValid((const char*)data, section_length+3);
   if (!crc_passed) {
-    dprint(L_ERR, "CRC 32 integrity check failed");    
+    dprint(L_ERR, "ERROR: PSIPTable CRC 32 integrity check failed");    
   }
 }
 
@@ -255,9 +219,20 @@ EIT::EIT(const u8* data, int length) : PSIPTable(data, length)
 
     u16 descriptors_length = ((d[10 + title_length] & 0x0F) << 8) | d[11 + title_length];
   
-    // Deal with and remove these descriptors right here...
-    // AddDescriptors(d+12+title_length, descriptors_length);
-
+    /*
+    DescriptorLoop dl(d+12+title_length, descriptors_length);
+    for (Descriptor* dsc = dl.First(); dsc; dsc = dl.Next(dsc))
+    {
+      if (dsc->GetTag() > 0x87) fprintf(stderr, "TAG: 0x%02X\n", dsc->GetTag());
+      switch (dsc->GetTag())
+      {
+        case ContentAdvisoryDescriptorTag: {
+          ContentAdvisoryDescriptor* cad = dynamic_cast<ContentAdvisoryDescriptor*>(dsc);
+        }
+        break;
+      }
+    }
+    */
     d += 12 + title_length + descriptors_length;
   } 
   
@@ -320,25 +295,23 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
     
     channels[i]->SetId(transport_stream_id, program_number);
     channels[i]->SetSid(sid);
-    
-    u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
-    AddDescriptors(d+32, descriptors_length);
-    
+
     int Vpid = 0;
     int Vtype = 0;
     int Ppid = 0;
-  
     int Dpids[MAXDPIDS + 1] = { 0 };
     char DLangs[MAXDPIDS][MAXLANGCODE2] = { "" };
     int NumDpids = 0;  
   
     //TODO: More in depth descriptor handling
-    for (size_t j=0; j<descriptors.size(); j++)
+    u16 descriptors_length = ((d[30] & 0x03) << 8) | d[31];
+    DescriptorLoop dl(d+32, descriptors_length);
+    
+    for (Descriptor* dsc = dl.First(); dsc; dsc = dl.Next(dsc))
     {
-      Descriptor* d = descriptors[j]; 
-      if (d->GetTag() == 0xA1) // Service Location Descriptor
+      if (dsc->GetTag() == ServiceLocationDescriptorTag)
       {
-        ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(d);
+        ServiceLocationDescriptor* sld = dynamic_cast<ServiceLocationDescriptor*>(dsc);
 
         for (u8 k = 0; k < sld->NumberOfStreams(); k++)
         { 
@@ -378,16 +351,14 @@ VCT::VCT(const u8* data, int length) : PSIPTable(data, length)
           }
         }
       } 
-      else if (d->GetTag() == 0xA0) // Extended Channel Name Descriptor
+      else if (dsc->GetTag() == ExtendedChannelNameDescriptorTag)
       {
-        ExtendedChannelNameDescriptor* ecnd = dynamic_cast<ExtendedChannelNameDescriptor*>(d);
+        ExtendedChannelNameDescriptor* ecnd = dynamic_cast<ExtendedChannelNameDescriptor*>(dsc);
         channels[i]->SetLongName( ecnd->GetLongChannelName().c_str() );
       }
       else
-        dprint(L_ERR, "Unhandled VCT descriptor 0x%02X",  d->GetTag());  
+        dprint(L_ERR, "Unhandled VCT descriptor 0x%02X",  dsc->GetTag());  
     }
-    
-    DeleteDescriptors();
     
     channels[i]->SetPids(Vpid, Ppid, Vtype, Dpids, DLangs);     
     

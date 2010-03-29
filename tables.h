@@ -42,14 +42,10 @@ public:
   bool CheckCRC(void) { return crc_passed; }
   u8 Version(void) const { return version_number; }
   u8 TableID(void) const { return table_id; }
-  u32 NumberOfDescriptors(void) const { return descriptors.size(); }
-  Descriptor* GetDescriptor(u32 i) const;
-  void DeleteDescriptors(void);
+
   static u8 ExtractVersion(const u8* data) { return (data[5] >> 1) & 0x1F; }
    
 protected:
-  void AddDescriptors(const u8* data, u16 length);
-  
   u8  table_id;
   u16 section_length;
   u16 table_id_extension;
@@ -59,8 +55,6 @@ protected:
   u8  last_section_number;
   u8  protocol_version;
   bool crc_passed;
-  
-  std::vector<Descriptor*> descriptors; //XXX: replace vector with something else!
 };
 
 

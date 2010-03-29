@@ -22,8 +22,31 @@
 
 #include <string>
 
+#include <vdr/tools.h>
+
 #include "tools.h"
 #include "structs.h"
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+enum DescriptorTag {
+  StuffingDescriptorTag               = 0x80,
+  AC3AudioDescriptorTag               = 0x81,
+  CaptionServiceDescriptorTag         = 0x86,
+  ContentAdvisoryDescriptorTag        = 0x87,
+  ExtendedChannelNameDescriptorTag    = 0xA0,
+  ServiceLocationDescriptorTag        = 0xA1,
+  TimeShiftedServiceDescriptorTag     = 0xA2,
+  ComponentNameDescriptorTag          = 0xA3,
+  DCCDepartingRequestDescriptorTag    = 0xA8,
+  DCCArrivingRequestDescriptorTag     = 0xA9,
+  RedistributionControlDescriptorTag  = 0xAA,
+  ATSCPrivateInformationDescriptorTag = 0xAD,
+  ContentIdentifierDescriptorTag      = 0xB6,
+  GenreDescriptorTag                  = 0xAB
+};
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -48,7 +71,7 @@ protected:
 //////////////////////////////////////////////////////////////////////////////
 
 
-class Descriptor
+class Descriptor : public cListObject
 {
 public:
   Descriptor(const u8* data); 
@@ -62,7 +85,17 @@ public:
 protected:
   u8 descriptor_tag;
   u8 descriptor_length;
-  
+};
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+class DescriptorLoop : public cList<Descriptor>
+{
+public:
+  DescriptorLoop(const u8* data, u16 length);
+  virtual ~DescriptorLoop() { }
 };
 
 
@@ -175,17 +208,17 @@ private:
 
 //////////////////////////////////////////////////////////////////////////////
 
-// Non-implemented descriptors
 
-// class StuffingDescriptor
-// class TimeShiftedServiceDescriptor : public Descriptor
-// class ComponentNameDescriptor : public Descriptor
-// class DCCDepartingRequestDescriptor : public Descriptor
-// class DCCArrivingRequestDescriptor : public Descriptor
-// class RedistributionControlDescriptor : public Descriptor
-// class ATSCPrivateInformationDescriptor : public Descriptor
-// class ContentIdentifierDescriptor : public Descriptor
-
+// Unimplemented descriptors
+/*
+class TimeShiftedServiceDescriptor : public Descriptor
+class ComponentNameDescriptor : public Descriptor
+class DCCDepartingRequestDescriptor : public Descriptor
+class DCCArrivingRequestDescriptor : public Descriptor
+class RedistributionControlDescriptor : public Descriptor
+class ATSCPrivateInformationDescriptor : public Descriptor
+class ContentIdentifierDescriptor : public Descriptor
+*/
 
 
 //////////////////////////////////////////////////////////////////////////////

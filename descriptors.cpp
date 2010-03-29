@@ -134,54 +134,43 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
   
   switch (data[0])
   {
-    case 0x80: // Stuffing Descriptor
+    case StuffingDescriptorTag:
       break;
     
-    case 0x81: // AC-3 audio Descriptor
+    case AC3AudioDescriptorTag:
       desc = new AC3AudioDescriptor(data); 
       break;
               
-    case 0x86: // Caption Service Descriptor
+    case CaptionServiceDescriptorTag:
       desc = new CaptionServiceDescriptor(data); 
       break;
       
-    case 0x87: // Content Advisory Descriptor
+    case ContentAdvisoryDescriptorTag:
       desc = new ContentAdvisoryDescriptor(data); 
       break;
     
-    case 0xA0: // Extended Channel Name Descriptor
+    case ExtendedChannelNameDescriptorTag:
       desc = new ExtendedChannelNameDescriptor(data);
       break;
     
-    case 0xA1: // Service Location Descriptor
+    case ServiceLocationDescriptorTag:
       desc = new ServiceLocationDescriptor(data);
       break;
-    
-    case 0xA2: // Time-Shifted Service Descriptor
-      break;
-    
-    case 0xA3: // Component Name Descriptor
-      break;
-    
-    case 0xA8: // DCC Departing Request Descriptor
-      break;
-    
-    case 0xA9: // DCC Arriving Request Descriptor 
-      break;
-               
-    case 0xAA: // Redistribution Control Descriptor
-      break;
-              
-    case 0xAD: // ATSC Private Information Descriptor
-      break;
-          
-    case 0xB6: // Content Identifier Descriptor
-      break;
-    
-    case 0xAB: // Genre Descriptor
+
+    case GenreDescriptorTag:
       desc = new GenreDescriptor(data);
       break;
-  
+    
+    // Unimplemented descriptors    
+    case TimeShiftedServiceDescriptorTag:
+    case ComponentNameDescriptorTag:
+    case DCCDepartingRequestDescriptorTag:
+    case DCCArrivingRequestDescriptorTag:      
+    case RedistributionControlDescriptorTag:      
+    case ATSCPrivateInformationDescriptorTag:  
+    case ContentIdentifierDescriptorTag:
+      break;
+
     default:
       dprint(L_ERR, "Unknown descriptor type: 0x%02X", data[0]);
       break;  
@@ -189,6 +178,24 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
   
   return desc;
 }
+
+
+//////////////////////////////////////////////////////////////////////////////
+
+
+DescriptorLoop::DescriptorLoop(const u8* data, u16 length)
+{ 
+  const u8* dc = data;
+
+  while (dc < data + length)
+  {
+    if (Descriptor* desc = Descriptor::CreateDescriptor(dc))
+      Add(desc);
+    
+    dc += dc[1] + 2;
+  }  
+}
+
 
 //////////////////////////////////////////////////////////////////////////////
 
