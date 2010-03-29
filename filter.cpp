@@ -60,7 +60,6 @@ cATSCFilter::cATSCFilter(int num)
   
   lastScanMGT = 0;
   lastScanSTT = 0;
-  prevTransponder = -1;
   
   Set(0x1FFB, 0xC7); // MGT
   // Set(0x1FFB, 0xCA); // RRT
@@ -84,40 +83,38 @@ cATSCFilter::~cATSCFilter()
 
 void cATSCFilter::SetStatus(bool On)
 { 
-  if (!On)
-  {
-    if (prevTransponder != Transponder())
-      cFilter::SetStatus(false); 
+  if (!On) {
+    cFilter::SetStatus(false);
+    return;
   }
-  else 
-  {
-    if (const cChannel* c = Channel()) {
-      if (c->Number())
-        F_LOG(L_MSG, "Switched to channel %d (%s)", c->Number(), *(c->GetChannelID().ToString()));
-      else {
-        F_LOG(L_DBG, "Channel scan: not activating filter");
-        prevTransponder = -1;
-        cFilter::SetStatus(false);
-        return;
-      } 
-    }
 
-    if (prevTransponder != Transponder())
-    {
-      F_LOG(L_DBG, "Different transponder: resetting");
-      prevTransponder = Transponder();
-      ResetFilter();
-      
-      if (FilterManager.Set(this, Transponder()))
-        cFilter::SetStatus(true);
-      else
-        F_LOG(L_DBG, "This transponder is being updated by another filter.");
-    }
-    else 
-    {
-      F_LOG(L_DBG, "Same transponder: not resetting");
-    }
+  if (const cChannel* c = Channel()) {
+    if (c->Number())
+      F_LOG(L_MSG, "Switched to channel %d (%s)", c->Number(), *(c->GetChannelID().ToString()));
+    else {
+      F_LOG(L_DBG, "Channel scan: not activating filter");
+
+      cFilter::SetStatus(false);
+      return;
+    } 
   }
+  /*
+  if (prevTransponder == Transponder()) {
+    F_LOG(L_DBG, "Same transponder: not resetting");
+    cFilter::SetStatus(true);
+    return;
+  }
+  
+  F_LOG(L_DBG, "Different transponder: resetting");
+  prevTransponder = Transponder();
+  */
+  ResetFilter();
+  FilterManager.Reset(this);
+    
+  if (FilterManager.Set(this, Transponder()))
+    cFilter::SetStatus(true);
+  else
+    F_LOG(L_DBG, "This transponder is being updated by another filter.");
 }
 
 
@@ -134,8 +131,6 @@ void cATSCFilter::ResetFilter(void)
   lastScanSTT = 0;
 
   channelSIDs.clear();
-  FilterManager.Reset(this);
-  
   eitPids.clear();
   ettEIDs.clear();
   ettPids.clear();
@@ -148,7 +143,7 @@ void cATSCFilter::ResetFilter(void)
 //----------------------------------------------------------------------------
 
 void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int length)
-{  
+{
   if (length < 15) {
     F_LOG(L_ERR, "Insufficient data length.");
     return;
@@ -183,7 +178,7 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       F_LOG(L_MSG, "Received VCT-%c.", Tid==0xC8?'T':'C');
       if (ProcessVCT(Data, length)) {
         gotVCT = true;
-        Del(0x1FFB, Tid);
+        Del(0x1FFB, 0xC8, 0xFE);
       }
     break; 
       

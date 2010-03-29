@@ -63,10 +63,8 @@ private:
   bool gotRRT;
   
   int fNum;
-  int prevTransponder;
   
   std::list<uint16_t> channelSIDs;
-
   std::list<uint32_t> eitPids; // SID << 16 | PID
   std::list<uint16_t> ettEIDs;
   std::list<uint16_t> ettPids;
