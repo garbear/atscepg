@@ -136,15 +136,7 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
   {
     case StuffingDescriptorTag:
       break;
-    
-    case AC3AudioDescriptorTag:
-      desc = new AC3AudioDescriptor(data); 
-      break;
-              
-    case CaptionServiceDescriptorTag:
-      desc = new CaptionServiceDescriptor(data); 
-      break;
-      
+          
     case ContentAdvisoryDescriptorTag:
       desc = new ContentAdvisoryDescriptor(data); 
       break;
@@ -160,6 +152,18 @@ Descriptor* Descriptor::CreateDescriptor(const u8* data)
     case GenreDescriptorTag:
       desc = new GenreDescriptor(data);
       break;
+
+    /* Unused descriptors    
+    case AC3AudioDescriptorTag:
+      desc = new AC3AudioDescriptor(data); 
+      break;
+              
+    case CaptionServiceDescriptorTag:
+      desc = new CaptionServiceDescriptor(data); 
+      break;
+    */
+    case AC3AudioDescriptorTag:
+    case CaptionServiceDescriptorTag:
     
     // Unimplemented descriptors    
     case TimeShiftedServiceDescriptorTag:
@@ -199,7 +203,7 @@ DescriptorLoop::DescriptorLoop(const u8* data, u16 length)
 
 //////////////////////////////////////////////////////////////////////////////
 
-
+#if 0
 // TODO: Not all fields are always specified, find appropriate default values
 AC3AudioDescriptor::AC3AudioDescriptor(const u8* data) : Descriptor(data)
 {
@@ -288,17 +292,6 @@ void AC3AudioDescriptor::Print(void)
   //bsmod;
   dprint(L_DAT, "  Number Channels   : %s", NumberOfChannelsText(num_channels) );
   dprint(L_DAT, "=====================================");
-  //full_svc;
-  //langcod;
-  //langcod2;
-  //mainid;
-  //priority;
-  //asvcflags;
-  //std::string text;
-  //language_flag;
-  //language_flag_2;
-  //language;
-  //language_2;
 }
 
 
@@ -327,7 +320,7 @@ CaptionServiceDescriptor::CaptionServiceDescriptor(const u8* data) : Descriptor(
     d += 6;
   }
 }
-
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -369,7 +362,7 @@ ServiceLocationDescriptor::ServiceLocationDescriptor(const u8* data) : Descripto
 
 //////////////////////////////////////////////////////////////////////////////
 
-// UNTESTED
+
 GenreDescriptor::GenreDescriptor(const u8* data): Descriptor(data)
 {
   attribute_count = data[2] & 0x1F;
