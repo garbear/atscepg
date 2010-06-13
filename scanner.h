@@ -66,6 +66,7 @@ private:
   FILE* file;
   int deviceNum;
   int modulation;
+  int ignoreEncrypted;
   const char* deviceNames[MAXDEVICES];
 };
 

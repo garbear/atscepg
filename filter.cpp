@@ -182,11 +182,13 @@ void cATSCFilter::Process(u_short Pid, u_char Tid, const u_char* Data, int lengt
       }
     break; 
       
-    case 0xCA: // RRT: Rating Region Table 
+    case 0xCA: // RRT: Rating Region Table
+    {
       if (gotRRT) return;
       F_LOG(L_DBG, "Received RRT: Not yet implemented.");
-      //RRT rrt(Data, length);
-      gotRRT = true; 
+      RRT rrt(Data, length);
+      gotRRT = true;
+    }
     break; 
       
     case 0xCB: // EIT: Event Information Table

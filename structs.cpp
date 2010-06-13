@@ -118,7 +118,16 @@ void AtscChannel::SetPids(int Vpid, int Ppid, int Vtype, int *Dpids, char DLangs
   int Spids[1] = { 0 };
   char ALangs[1][MAXLANGCODE2] = { "" };
   char SLangs[1][MAXLANGCODE2] = { "" };
+#if VDRVERSNUM < 10715  
   channel.SetPids(Vpid, Ppid, Vtype, Apids, ALangs, Dpids, DLangs, Spids, SLangs, 0);
+#else
+  int Atypes[1] = { 0 };
+  int Dtypes[MAXDPIDS + 1] = { 0 };
+  for (int i=0; i<MAXDPIDS && Dpids[i]; i++)
+    Dtypes[i] = 0x6A; // SI::AC3DescriptorTag
+
+  channel.SetPids(Vpid, Ppid, Vtype, Apids, Atypes, ALangs, Dpids, Dtypes, DLangs, Spids, SLangs, 0);
+#endif
 }
 
 

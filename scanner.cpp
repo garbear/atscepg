@@ -42,11 +42,13 @@
 #define FILTER_TIMEOUT 5000
 #define FILE_NAME      "channels.conf"
 
+static const char* const ignoreEncStrings[2] = { "Include encrypted", "Ignore encrypted" };
+
 
 //////////////////////////////////////////////////////////////////////////////
 
 
-cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10), 
+cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 12),
                                    cThread("ATSC Scanner")
 {
   dprint(L_DBGV, "ATSC Scanner Created.");
@@ -62,6 +64,7 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
   modulation = 0;
   currentFrequency = 0;
   devSelection = true;
+  ignoreEncrypted = true;
   
   if (AtscDevices.NumDevices() == 0) {
     devSelection = false;
@@ -74,6 +77,7 @@ cATSCScanner::cATSCScanner(void) : cOsdMenu("ATSC Channel Scan", 10, 16, 10),
       deviceNames[i] = AtscDevices.GetName(i);
     cOsdMenu::Add(new cMenuEditStraItem("Device", &deviceNum, n, deviceNames));
     cOsdMenu::Add(new cMenuEditStraItem("Modulation", &modulation, NUM_FREQ_TYPES, Frequencies_Name));
+    cOsdMenu::Add(new cMenuEditStraItem("Channels", &ignoreEncrypted, 2, ignoreEncStrings));
     cOsdMenu::Add(new cOsdItem("Start scan..."));
   }
 
@@ -276,10 +280,12 @@ bool cATSCScanner::ProcessPMT(const u_char* data, int Length)
   int Vtype = 0;
   int Ppid  = 0;
   int Apids[1] = { 0 };
-  int Spids[1] = { 0 };
+  int Atypes[1] = { 0 };
   char ALangs[1][MAXLANGCODE2] = { "" };
+  int Spids[1] = { 0 };
   char SLangs[1][MAXLANGCODE2] = { "" };
   int Dpids[MAXDPIDS + 1] = { 0 };
+  int Dtypes[MAXDPIDS + 1] = { 0 };
   char DLangs[MAXDPIDS][MAXLANGCODE2] = { "" };
   int NumDpids = 0;
   int NumCaIds = 0;
@@ -318,6 +324,7 @@ bool cATSCScanner::ProcessPMT(const u_char* data, int Length)
         }
         if (NumDpids < MAXDPIDS) {
           Dpids[NumDpids] = esPid;
+          Dtypes[NumDpids] = SI::AC3DescriptorTag;
           strn0cpy(DLangs[NumDpids], lang, MAXLANGCODE1);
           NumDpids++;
         }
@@ -344,13 +351,20 @@ bool cATSCScanner::ProcessPMT(const u_char* data, int Length)
     }
   } 
   
-  cChannel channel;
-  SetTransponderData(&channel);
-  channel.SetId(0, tsid, pmt.getServiceId());
-  channel.SetPids(Vpid, Ppid, Vtype, Apids, ALangs, Dpids, DLangs, Spids, SLangs, 0);
-  channel.SetCaIds(CaIds);
-  if (file)
-    fprintf(file, "%s", *(channel.ToText()));
+  if (!ignoreEncrypted || NumCaIds == 0)
+  {
+    cChannel channel;
+    SetTransponderData(&channel);
+    channel.SetId(0, tsid, pmt.getServiceId());
+#if VDRVERSNUM < 10715
+    channel.SetPids(Vpid, Ppid, Vtype, Apids, ALangs, Dpids, DLangs, Spids, SLangs, 0);
+#else
+    channel.SetPids(Vpid, Ppid, Vtype, Apids, Atypes, ALangs, Dpids, Dtypes, DLangs, Spids, SLangs, 0);
+#endif
+    channel.SetCaIds(CaIds);
+    if (file)
+      fprintf(file, "%s", *(channel.ToText()));
+  }
     
   pmtSIDs.erase(itr);
   if (pmtSIDs.empty()) {
@@ -389,9 +403,10 @@ eOSState cATSCScanner::ProcessKey(eKeys Key)
         break;
         
       case kOk:
-        if (devSelection && Current() == 2) {
+        if (devSelection && Current() == 3) {
           devSelection = false;
           Clear();
+          SetCols(10, 16, 10);
           Display();
           Start();
         }
